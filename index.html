@@ -1,0 +1,2489 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>종합 수의 임상 계산기</title>
+<!-- PWA 연결 (앱 설치용) -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#7c3aed">
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="수의계산기">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    body { font-family: 'Inter', -apple-system, sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-tap-highlight-color: transparent; }
+    
+    /* Tabs */
+    .tab-btn { padding: 12px 12px; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 600; color: #6b7280; transition: all 0.2s; white-space: nowrap; font-size: 13px; flex: 1; text-align: center; }
+    .tab-btn.active { border-bottom: 2px solid #8b5cf6; color: #8b5cf6; background: #fdfaef; }
+    .tab-content { display: none; animation: fadeIn 0.2s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Form Elements */
+    .input-group { margin-bottom: 12px; }
+    .input-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+    .input-field { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background-color: #fff; transition: border-color 0.2s; }
+    .input-field:focus { outline: none; border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2); }
+    .input-field[readonly] { background-color: #f9fafb; color: #6b7280; cursor: not-allowed; }
+    
+    /* Flex Row */
+    .flex-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 12px; width: 100%; }
+    .flex-row .form-group { flex: 1; min-width: 0; }
+    .flex-row .form-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+
+    /* Toggle Buttons */
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .btn-toggle { padding: 10px 12px; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; flex: 1; text-align: center; color: #4b5563; font-weight: 600; transition: all 0.2s; }
+    .btn-toggle.active { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+
+    /* Modal & Icons */
+    .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background-color: #8b5cf6; color: white; border-radius: 50%; font-size: 12px; cursor: pointer; margin-left: 4px; font-weight: bold; }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    .modal-content { background-color: #fff; padding: 24px; border-radius: 12px; width: 90%; max-width: 500px; font-size: 13px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; position: relative; }
+    .close { color: #9ca3af; position: absolute; top: 12px; right: 16px; font-size: 24px; font-weight: bold; cursor: pointer; }
+    .modal-content table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .modal-content th, .modal-content td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
+    .modal-content th { background-color: #f3f4f6; }
+
+    /* Table */
+    .table-container { width: 100%; overflow-x: auto; margin-top: 10px; border-radius: 4px; border: 1px solid #64748b; }
+    .inj-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; background: #fff; }
+    .inj-table th { background: #e2e8f0; padding: 6px 8px; font-weight: 700; color: #0f172a; border-bottom: 2px solid #64748b; border-right: 1px solid #94a3b8; }
+    .inj-table td { padding: 6px 8px; border-bottom: 1px solid #94a3b8; border-right: 1px solid #94a3b8; color: #1e293b; }
+    .inj-table th:last-child, .inj-table td:last-child { border-right: none; }
+    .val-highlight { font-weight: 800; color: #6d28d9; font-size: 13px; }
+</style>
+</head>
+<body class="p-2 md:p-6 flex justify-center">
+
+<div class="w-full max-w-2xl bg-white rounded-xl shadow-lg overflow-hidden pb-10">
+    <!-- Tabs -->
+    <div class="bg-gray-50 border-b border-gray-200 flex overflow-x-auto no-scrollbar">
+        <div class="tab-btn active" onclick="switchTab('fluid')">수액 및 약물</div>
+        <div class="tab-btn" onclick="switchTab('injection')">주사제</div>
+        <div class="tab-btn" onclick="switchTab('seizure')">발작 약물</div>
+        <div class="tab-btn" onclick="switchTab('feeding')">사료량</div>
+        <div class="tab-btn" onclick="switchTab('sodium')">Na 교정</div>
+        <div class="tab-btn" onclick="switchTab('transfusion')">수혈</div>
+    </div>
+
+    <div class="p-4 md:p-7">
+        <!-- ========================================== -->
+        <!-- 1. 수액 및 약물 탭                         -->
+        <!-- ========================================== -->
+        <div id="fluid" class="tab-content active">
+            <h2 class="text-xl font-bold text-gray-800 mb-5">수액 및 약물 계산기</h2>
+            
+            <div class="input-group">
+                <label>종 선택</label>
+                <div class="btn-group" id="fluidSpeciesGroup">
+                    <button class="btn-toggle active" onclick="setFluidSpecies('dog', event)">개 (Dog)</button>
+                    <button class="btn-toggle" onclick="setFluidSpecies('cat', event)">고양이 (Cat)</button>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label>체중 (kg)</label>
+                <input type="number" id="fluidWeight" class="input-field text-lg font-bold" step="0.1" oninput="calcFluid()">
+            </div>
+
+            <div class="flex-row bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                <div class="form-group">
+                    <label class="text-indigo-800">유지 수액 (ml/hr)</label>
+                    <input type="text" id="fluidMaintRate" class="input-field border-indigo-200 font-semibold" readonly value="0.0">
+                </div>
+                <div class="form-group">
+                    <label class="text-indigo-800">수액 배수</label>
+                    <input type="number" id="fluidMultiplier" class="input-field border-indigo-400" step="0.1" value="1" oninput="calcFluid()">
+                </div>
+                <div class="form-group">
+                    <label class="text-indigo-800">설정 속도 (ml/hr)</label>
+                    <input type="text" id="fluidTargetRate" class="input-field border-indigo-200 font-bold text-indigo-700 text-lg" readonly value="0.0">
+                </div>
+            </div>
+
+            <!-- 약물 선택 -->
+            <div class="input-group mt-5">
+                <label>약물 선택</label>
+                <select id="fluidDrugSelect" class="input-field font-medium text-base" onchange="handleFluidDrugSelect()">
+                    <option value="none">약물을 선택하세요</option>
+                    <option value="dobutamine">도부타민 (50mg/ml)</option>
+                    <option value="furosemide">푸로세마이드 (10mg/ml)</option>
+                    <option value="nitroprusside">니트로프루시드 (25mg/ml)</option>
+                    <option value="norepinephrine">노르에피네프린 (1mg/ml)</option>
+                    <option value="vasopressin">바소프레신 (20U/ml)</option>
+                    <option value="metoclopramide">메토클로프로마이드 (5mg/ml)</option>
+                    <option value="phenylephrine">페닐에프린 (10mg/ml)</option>
+                    <option value="diltiazem">딜티아젬 (5mg/ml)</option>
+                    <option value="dopamine">도파민 (40mg/ml)</option>
+                    <option value="calcium_gluconate">칼슘글루코네이트 (100mg/ml)</option>
+                    <option value="phosphorus">포스텐 (1mmol/ml)</option>
+                    <option value="cefotaxime">세포탁심 CRI (200mg/ml)</option>
+                    <option value="famotidine_cri">파모티딘 CRI (2mg/ml)</option>
+                    <option value="nicardipine">니카르디핀 (1mg/ml)</option>
+                    <option value="kcl">KCl (2mEq/ml)</option>
+                    <option value="dka">DKA (당뇨성 케톤산증)</option>
+                    <option value="tpa">tPA (혈전용해제)</option>
+                    <option value="mgso4">10% MgSO4 (0.8mEq/ml)</option>
+                    <option value="lidocaine">리도카인 (20mg/ml)</option>
+                    <option value="esmolol">에스몰롤 (10mg/ml)</option>
+                    <option value="hydrocortisone">하이드로코티손 (50mg/ml)</option>
+                </select>
+            </div>
+            
+            <div id="dynamicDrugContainer" class="mt-4 hidden">
+                <!-- 도부타민 -->
+                <div id="dobutamineForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/min, 권장용량: 5~20</span></label>
+                        <input type="number" id="dobuDose" class="input-field border-indigo-200 font-semibold" step="1" oninput="calcDobutamine()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="dobuFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcDobutamine()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="dobuFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcDobutamine()">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 푸로세마이드 -->
+                <div id="furosemideForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg/hr, 권장용량: 0.1~2</span></label>
+                        <input type="number" id="furoDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcFurosemide()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="furoFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcFurosemide()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="furoFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcFurosemide()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 니트로프루시드 -->
+                <div id="nitroprussideForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/min, 권장용량: 1~10</span></label>
+                        <input type="number" id="nitroDose" class="input-field border-indigo-200 font-semibold" step="1" oninput="calcNitroprusside()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="nitroFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcNitroprusside()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="nitroFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcNitroprusside()">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 노르에피네프린 -->
+                <div id="norepinephrineForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/min, 권장용량: 0.2~2</span></label>
+                        <input type="number" id="norepiDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcNorepinephrine()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="norepiFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcNorepinephrine()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="norepiFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcNorepinephrine()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 바소프레신 -->
+                <div id="vasopressinForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mU/kg/min, 권장용량: 0.5~2.0</span></label>
+                        <input type="number" id="vasoDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcVasopressin()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="vasoFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcVasopressin()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="vasoFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcVasopressin()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 메토클로프라마이드 -->
+                <div id="metoclopramideForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg/day, 권장용량: 1~2</span></label>
+                        <input type="number" id="metoDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcMetoclopramide()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="metoFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcMetoclopramide()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="metoFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcMetoclopramide()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 페닐에프린 -->
+                <div id="phenylephrineForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/min, 권장용량: 1~3</span></label>
+                        <input type="number" id="phenylDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcPhenylephrine()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="phenylFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcPhenylephrine()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="phenylFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcPhenylephrine()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 딜티아젬 -->
+                <div id="diltiazemForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/min, 권장용량: 1~5</span></label>
+                        <input type="number" id="diltiaDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcDiltiazem()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="diltiaFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcDiltiazem()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="diltiaFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcDiltiazem()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 도파민 -->
+                <div id="dopamineForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/min, 권장용량: 1~20</span></label>
+                        <input type="number" id="dopaDose" class="input-field border-indigo-200 font-semibold" step="1" oninput="calcDopamine()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="dopaFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcDopamine()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="dopaFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcDopamine()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 칼슘글루코네이트 -->
+                <div id="calciumGluconateForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg/hr, 권장용량: 5~15</span></label>
+                        <input type="number" id="calciumDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcCalciumGluconate()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="calciumFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcCalciumGluconate()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="calciumFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcCalciumGluconate()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 포스텐(인) -->
+                <div id="phosphorusForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mmol/kg/hr, 권장용량: 0.01~0.12</span></label>
+                        <input type="number" id="phosDose" class="input-field border-indigo-200 font-semibold" step="0.01" oninput="calcPhosphorus()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="phosFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcPhosphorus()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="phosFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcPhosphorus()">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 세포탁심 CRI -->
+                <div id="cefotaximeForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg/hr, 권장용량: 5</span></label>
+                        <input type="number" id="cefoDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcCefotaxime()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="cefoFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcCefotaxime()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="cefoFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcCefotaxime()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 파모티딘 CRI -->
+                <div id="famotidineForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg/day, 권장용량: 8</span></label>
+                        <input type="number" id="famoDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcFamotidineCri()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="famoFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcFamotidineCri()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="famoFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcFamotidineCri()">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 니카르디핀 -->
+                <div id="nicardipineForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/min, 권장용량: 1~5</span></label>
+                        <input type="number" id="nicaDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcNicardipine()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="nicaFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcNicardipine()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="nicaFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcNicardipine()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KCl (속도 입력 숨김, 상단 속도 연동) -->
+                <div id="kclForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">현재 K+ 농도 <span class="text-xs text-gray-500 font-normal ml-1">단위: mEq/L</span></label>
+                        <input type="number" id="kclDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcKcl()">
+                    </div>
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold mb-2">수액 선택 (Base K+ 차감용)</label>
+                        <div class="flex gap-2">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="kclFluidType" value="normal" checked class="peer hidden" onchange="calcKcl()">
+                                <div class="text-center py-2 bg-white border border-indigo-200 rounded-lg peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 font-medium text-sm transition-colors">일반수액 (0)</div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="kclFluidType" value="hartmann" class="peer hidden" onchange="calcKcl()">
+                                <div class="text-center py-2 bg-white border border-indigo-200 rounded-lg peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 font-medium text-sm transition-colors">하트만 (4)</div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="kclFluidType" value="plasmalyte" class="peer hidden" onchange="calcKcl()">
+                                <div class="text-center py-2 bg-white border border-indigo-200 rounded-lg peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 font-medium text-sm transition-colors">플라주 (5)</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="kclFluidVol" class="input-field border-indigo-200" step="10" oninput="calcKcl()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DKA (속도 입력 숨김, 상단 속도 연동) -->
+                <div id="dkaForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="mb-3 text-red-600 font-bold text-sm bg-red-50 p-2 rounded-lg border border-red-200">
+                        💡 칼륨 1.5배 보정 적용
+                    </div>
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">현재 K+ 농도 <span class="text-xs text-gray-500 font-normal ml-1">단위: mEq/L</span></label>
+                        <input type="number" id="dkaDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcDka()">
+                    </div>
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold mb-2">수액 선택 (Base K+ 차감용)</label>
+                        <div class="flex gap-2">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="dkaFluidType" value="normal" checked class="peer hidden" onchange="calcDka()">
+                                <div class="text-center py-2 bg-white border border-indigo-200 rounded-lg peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 font-medium text-sm transition-colors">일반수액 (0)</div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="dkaFluidType" value="hartmann" class="peer hidden" onchange="calcDka()">
+                                <div class="text-center py-2 bg-white border border-indigo-200 rounded-lg peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 font-medium text-sm transition-colors">하트만 (4)</div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="dkaFluidType" value="plasmalyte" class="peer hidden" onchange="calcDka()">
+                                <div class="text-center py-2 bg-white border border-indigo-200 rounded-lg peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 font-medium text-sm transition-colors">플라주 (5)</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="dkaFluidVol" class="input-field border-indigo-200" step="10" oninput="calcDka()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- tPA -->
+                <div id="tpaForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg, 권장용량: 1.0 ~ 5.0</span></label>
+                        <input type="number" id="tpaDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calctPA()">
+                    </div>
+                    <div class="flex-row mb-3">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">유지 투여 시간</label>
+                            <select id="tpaTime" class="input-field border-indigo-200" onchange="calctPA()">
+                                <option value="1">1시간</option>
+                                <option value="2">2시간</option>
+                                <option value="3">3시간</option>
+                                <option value="4" selected>4시간</option>
+                                <option value="5">5시간</option>
+                                <option value="6">6시간</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 10% MgSO4 -->
+                <div id="mgso4Form" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mEq/kg/day, 권장: 0.75~1.0 (최대 1.5)</span></label>
+                        <input type="number" id="mgso4Dose" class="input-field border-indigo-200 font-semibold" step="0.01" oninput="calcMgso4()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="mgso4FluidVol" class="input-field border-indigo-200" step="10" value="500" oninput="calcMgso4()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="mgso4FluidRate" class="input-field border-indigo-200" step="0.1" oninput="calcMgso4()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 리도카인 -->
+                <div id="lidocaineForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span id="lidoDoseGuide" class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/min, 권장용량: 30~80</span></label>
+                        <input type="number" id="lidoDose" class="input-field border-indigo-200 font-semibold" step="1" oninput="calcLidocaine()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="lidoFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcLidocaine()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="lidoFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcLidocaine()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 에스몰롤 -->
+                <div id="esmololForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/min, 권장용량: 50~200</span></label>
+                        <input type="number" id="esmoDose" class="input-field border-indigo-200 font-semibold" step="1" oninput="calcEsmolol()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="esmoFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcEsmolol()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="esmoFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcEsmolol()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 하이드로코티손 -->
+                <div id="hydrocortisoneForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg/hr, 권장용량: 에디슨 0.5(0.25~0.625), CIRCI 0.08(0.04~0.18)</span></label>
+                        <input type="number" id="hydroDose" class="input-field border-indigo-200 font-semibold" step="0.01" oninput="calcHydrocortisone()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="hydroFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcHydrocortisone()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="hydroFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcHydrocortisone()">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="drugResultText" class="mt-4 hidden bg-indigo-50 p-4 rounded-lg border border-indigo-200 text-center font-bold text-indigo-900 text-base shadow-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 2. 주사제 일괄 계산기                       -->
+        <!-- ========================================== -->
+        <div id="injection" class="tab-content">
+            <h2 class="text-xl font-bold text-gray-800 mb-5">주사제 일괄 계산기</h2>
+            
+            <div class="input-group">
+                <label>환자 체중 (kg)</label>
+                <input type="number" id="injWeight" class="input-field text-lg font-bold" step="0.1" placeholder="체중 입력" oninput="calcInj()">
+            </div>
+
+            <div id="injResultContainer" class="table-container hidden mt-5">
+                <table id="injTable" class="inj-table">
+                    <thead>
+                        <tr>
+                            <th>약물명</th>
+                            <th>용량(mg/kg)</th>
+                            <th>농도</th>
+                            <th>투여량(ml)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 3. 발작 약물 탭                             -->
+        <!-- ========================================== -->
+        <div id="seizure" class="tab-content">
+            <h2 class="text-xl font-bold text-gray-800 mb-5">발작 약물 계산기</h2>
+            
+            <div class="input-group">
+                <label>환자 체중 (kg)</label>
+                <input type="number" id="szWeight" class="input-field text-lg font-bold" step="0.1" placeholder="체중 입력" oninput="calcSz()">
+            </div>
+            
+            <div class="input-group mt-5">
+                <label>발작 약물 선택</label>
+                <select id="szDrug" class="input-field" onchange="handleSzSelect()">
+                    <option value="none">약물을 선택하세요</option>
+                    <option value="mida">미다졸람 (Midazolam) 1mg/ml</option>
+                    <option value="mida_cri">미다졸람 CRI</option>
+                    <option value="prop_cri_pure">프로포폴 원액 CRI (10mg/ml)</option>
+                    <option value="prop_cri_mix">프로포폴 CRI (수액희석 10mg/ml)</option>
+                    <option value="leve">레베티라세탐 (Levetiracetam) 100mg/ml</option>
+                    <option value="pheno">페노바비탈 (Phenobarbital) 100mg/ml</option>
+                    <option value="medeto_cri">메데토미딘 CRI (Medetomidine 1mg/ml)</option>
+                    <option value="keta_cri">케타민 CRI (Ketamine 50mg/ml)</option>
+                    <option value="alfa_cri">알팍산 CRI (Alfaxan 10mg/ml)</option>
+                </select>
+            </div>
+
+            <!-- CRI 수액 총 양 / 속도 폼 (미다졸람, 프로포폴, 메데토미딘, 케타민, 알팍산 CRI 전용) -->
+            <div id="szCriInputs" class="hidden bg-purple-50 p-4 rounded-lg border border-purple-100 mt-4 mb-4">
+                <div id="midaCriDoseGroup" class="hidden mb-3">
+                    <label class="text-purple-800 font-bold mb-1 block text-sm">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg/hr (권장: 0.1~2.5)</span></label>
+                    <input type="number" id="szMidaCriDose" class="input-field border-purple-200 font-semibold" step="0.1" oninput="calcSz()">
+                </div>
+                
+                <div id="propMixDoseGroup" class="hidden mb-3">
+                    <label class="text-purple-800 font-bold mb-1 block text-sm">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg/min (권장: 0.1~0.6)</span></label>
+                    <input type="number" id="szPropDose" class="input-field border-purple-200 font-semibold" step="0.01" oninput="calcSz()">
+                </div>
+
+                <div id="medetoCriDoseGroup" class="hidden mb-3">
+                    <label class="text-purple-800 font-bold mb-1 block text-sm">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/hr (권장: 1~6)</span></label>
+                    <input type="number" id="szMedetoCriDose" class="input-field border-purple-200 font-semibold" step="0.1" oninput="calcSz()">
+                </div>
+
+                <div id="ketaCriDoseGroup" class="hidden mb-3">
+                    <label class="text-purple-800 font-bold mb-1 block text-sm">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg/hr (권장: 0.1~0.5)</span></label>
+                    <input type="number" id="szKetaCriDose" class="input-field border-purple-200 font-semibold" step="0.1" oninput="calcSz()">
+                </div>
+
+                <div id="alfaCriDoseGroup" class="hidden mb-3">
+                    <label class="text-purple-800 font-bold mb-1 block text-sm">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: mg/kg/hr (권장: 경련 6~9, 삽관진정 1~3)</span></label>
+                    <input type="number" id="szAlfaCriDose" class="input-field border-purple-200 font-semibold" step="0.1" oninput="calcSz()">
+                </div>
+                
+                <div class="flex-row !mb-0">
+                    <div class="form-group">
+                        <label class="text-purple-800 font-bold">수액 총 양 (ml)</label>
+                        <input type="number" id="szFluidVol" class="input-field border-purple-200" step="1" value="30" oninput="calcSz()">
+                    </div>
+                    <div class="form-group">
+                        <label class="text-purple-800 font-bold">수액 속도 (ml/hr)</label>
+                        <input type="number" id="szFluidRate" class="input-field border-purple-200" step="0.1" value="1" oninput="calcSz()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 발작 약물 결과창 -->
+            <div id="szResultContainer" class="hidden mt-4 bg-purple-50 p-4 rounded-xl border border-purple-200 text-center shadow-sm">
+                 <div id="szResultText" class="text-lg font-bold text-purple-900"></div>
+                 <div id="szResultDesc" class="text-xs text-purple-600 mt-2 font-medium bg-purple-100/50 inline-block px-2 py-1 rounded"></div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 4. 사료량 탭                               -->
+        <!-- ========================================== -->
+        <div id="feeding" class="tab-content">
+            <h2 class="text-xl font-bold text-gray-800 mb-5">사료량 계산기</h2>
+            
+            <div class="input-group">
+                <label>종 선택</label>
+                <div class="btn-group" id="feedSpeciesGroup">
+                    <button class="btn-toggle active" onclick="setFeedSpecies('dog', event)">개 (Dog)</button>
+                    <button class="btn-toggle" onclick="setFeedSpecies('cat', event)">고양이 (Cat)</button>
+                </div>
+            </div>
+
+            <div class="flex-row bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+                <div class="form-group">
+                    <label>체중 (kg)</label>
+                    <input type="number" id="feedWeight" class="input-field font-bold text-lg" step="0.1" oninput="triggerFeedCalc()">
+                </div>
+                <div class="form-group">
+                    <label>DER Factor <span class="info-icon" onclick="openFactorModal()">?</span></label>
+                    <input type="number" id="activityFactor" class="input-field" step="0.1" value="1" oninput="triggerFeedCalc()">
+                </div>
+                <div class="form-group">
+                    <label>급여 횟수 (회/일)</label>
+                    <select id="feedCount" class="input-field" onchange="triggerFeedCalc()">
+                        <option value="1">1회</option>
+                        <option value="2" selected>2회</option>
+                        <option value="3">3회</option>
+                        <option value="4">4회</option>
+                        <option value="5">5회</option>
+                        <option value="6">6회</option>
+                        <option value="7">7회</option>
+                        <option value="8">8회</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 계산 모드 탭 -->
+            <div class="input-group mt-4">
+                <div class="btn-group">
+                    <button class="btn-toggle active" id="modeBtnNormal" onclick="setFeedMode('normal')">일반 다중 급여</button>
+                    <button class="btn-toggle" id="modeBtnForce" onclick="setFeedMode('force')">강급 (잔여 칼로리)</button>
+                </div>
+            </div>
+
+            <!-- 일반 급여 섹션 -->
+            <div id="normalFeedSection">
+                <div class="mt-4 bg-pink-50 p-4 rounded-xl border border-pink-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-[14px] font-bold text-gray-800">급여할 사료 다중 선택 <span class="text-xs font-normal text-pink-600">(선택 개수만큼 칼로리 분할)</span></label>
+                        <button type="button" onclick="addFeedRow()" class="text-xs bg-pink-200 text-pink-800 hover:bg-pink-300 px-3 py-1.5 rounded font-bold transition-colors">+ 사료 추가</button>
+                    </div>
+                    <div id="feedRowsContainer" class="flex flex-col gap-2">
+                        <!-- 자바스크립트가 여기에 사료 입력칸을 추가합니다 -->
+                    </div>
+                </div>
+
+                <div id="feedResult" class="bg-white border border-gray-300 rounded-xl p-4 mt-6 hidden shadow-sm text-center">
+                    <div id="feedResultContent"></div>
+                </div>
+            </div>
+
+            <!-- 강급 섹션 -->
+            <div id="forceFeedSection" class="hidden">
+                <div class="mt-4 bg-green-50 p-4 rounded-xl border border-green-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-[14px] font-bold text-gray-800">자발 섭취 완료한 사료</label>
+                        <button type="button" onclick="addEatenRow()" class="text-xs bg-green-200 text-green-800 hover:bg-green-300 px-3 py-1.5 rounded font-bold transition-colors">+ 섭취 사료 추가</button>
+                    </div>
+                    <div id="eatenRowsContainer" class="flex flex-col gap-2"></div>
+                </div>
+
+                <div class="mt-4 bg-orange-50 p-4 rounded-xl border border-orange-200">
+                    <label class="text-[14px] font-bold text-gray-800 block mb-3">강급할 사료 선택</label>
+                    <div id="forceDietContainer"></div>
+                </div>
+
+                <div id="forceFeedResult" class="bg-white border border-gray-300 rounded-xl p-4 mt-6 hidden shadow-sm text-center"></div>
+            </div>
+            
+            <div class="mt-6 text-xs text-gray-500 bg-gray-100 p-3 rounded-lg text-center">
+                <strong>계산식:</strong> RER = 70 × (체중kg)<sup>0.75</sup> &nbsp;|&nbsp; DER = RER × Factor<br>
+                <span class="text-gray-400">사료 혼합 시 총 필요 칼로리(DER)를 사료 개수(N)로 균등하게 나눕니다.</span>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 5. Na 교정 탭                              -->
+        <!-- ========================================== -->
+        <div id="sodium" class="tab-content">
+            <h2 class="text-xl font-bold text-gray-800 mb-5">나트륨(Na) 교정 계산기</h2>
+            
+            <div class="flex-row">
+                <div class="form-group">
+                    <label>체중 (kg)</label>
+                    <input type="number" id="naWeight" class="input-field text-lg font-bold" step="0.1" oninput="calcSodium()">
+                </div>
+                <div class="form-group">
+                    <label>현재 Na+ (mEq/L)</label>
+                    <input type="number" id="naCurrent" class="input-field text-lg font-bold" step="0.1" oninput="calcSodium()">
+                </div>
+            </div>
+
+            <!-- 다중 수액 선택 컨테이너 -->
+            <div class="mt-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div class="flex justify-between items-center mb-3">
+                    <label class="text-[13px] font-bold text-gray-700">투여 수액 및 속도 설정 (다중 혼합 가능)</label>
+                    <button type="button" onclick="addNaFluidRow()" class="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded font-bold transition-colors">+ 수액 추가</button>
+                </div>
+                <div id="naFluidRowsContainer" class="flex flex-col gap-2">
+                    <!-- 첫번째 수액 기본 입력칸 -->
+                    <div class="flex gap-2 items-center na-fluid-row">
+                        <select class="input-field !py-2 !text-sm flex-1 na-fluid-select" onchange="calcSodium()">
+                            <option value="154">0.9% N/S (Na: 154)</option>
+                            <option value="131">하트만 (Na: 131)</option>
+                            <option value="140">플라주오피 (Na: 140)</option>
+                            <option value="77">하프샐라인 (Na: 77)</option>
+                            <option value="0">5% DW (Na: 0)</option>
+                            <option value="513">3% NaCl (Na: 513)</option>
+                        </select>
+                        <input type="number" class="input-field !py-2 !text-sm w-24 na-fluid-rate" placeholder="ml/hr" step="0.1" oninput="calcSodium()">
+                        <button type="button" class="text-gray-400 hover:text-red-500 font-bold px-2 opacity-50 cursor-not-allowed" disabled>✕</button>
+                    </div>
+                </div>
+                
+                <!-- 혼합 수액 결과 요약창 -->
+                <div id="naMixedInfo" class="mt-3 hidden text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 p-2 rounded-lg text-center font-bold">
+                </div>
+            </div>
+
+            <div id="naResult" class="hidden mt-5 bg-blue-50 p-5 rounded-xl border border-blue-200 text-center shadow-sm">
+                 <div class="text-sm font-bold text-blue-700 mb-1">시간당 나트륨 예상 변화량</div>
+                 <div class="flex items-end justify-center gap-1">
+                     <span id="naChangeText" class="text-4xl font-extrabold text-blue-800 tracking-tight">0.00</span>
+                     <span class="text-base text-blue-600 font-bold mb-1">mEq/L/hr</span>
+                 </div>
+                 <div id="naWarning" class="mt-3 text-xs text-red-700 bg-red-100 border border-red-200 p-2 rounded-lg font-bold hidden"></div>
+            </div>
+            
+            <div class="mt-4 text-xs text-gray-500 bg-gray-100 p-3 rounded-lg text-center">
+                <strong>[나트륨 교정 공식]</strong><br>
+                ΔNa = V × (Nainfusate − Napatient) ÷ (TBW + V)<br>
+                <span class="text-gray-400">* V = 시간당 총 투여량(L), TBW = 체중의 60% (0.6) 적용</span>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 6. 수혈 탭                                 -->
+        <!-- ========================================== -->
+        <div id="transfusion" class="tab-content">
+            <h2 class="text-xl font-bold text-gray-800 mb-5">수혈 및 혈액제제 계산기</h2>
+            
+            <div class="input-group">
+                <label>제제 선택</label>
+                <div class="btn-group" id="tfTypeGroup">
+                    <button class="btn-toggle active" onclick="setTfType('blood', event)">혈액 (전혈)</button>
+                    <button class="btn-toggle" onclick="setTfType('albumin', event)">알부민 (Albumin)</button>
+                    <button class="btn-toggle" onclick="setTfType('hivig', event)">hIVIG</button>
+                </div>
+            </div>
+
+            <!-- 6-1. 혈액 (전혈) 폼 -->
+            <div id="tfBloodForm" class="bg-red-50/40 p-4 rounded-xl border border-red-100 mt-4">
+                <div class="input-group">
+                    <label>종 선택</label>
+                    <div class="btn-group" id="tfBloodSpeciesGroup">
+                        <button class="btn-toggle active" onclick="setTfBloodSpecies('dog', event)">개 (Dog)</button>
+                        <button class="btn-toggle" onclick="setTfBloodSpecies('cat', event)">고양이 (Cat)</button>
+                    </div>
+                </div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>체중 (kg)</label>
+                        <input type="number" id="tfBloodWeight" class="input-field font-bold text-lg" step="0.1" oninput="calcTransfusion()">
+                    </div>
+                    <div class="form-group">
+                        <label>Donor PCV (%)</label>
+                        <input type="number" id="tfDonorPcv" class="input-field font-bold text-lg text-red-700" step="1" value="45" oninput="calcTransfusion()">
+                    </div>
+                </div>
+                <div class="flex-row !mb-0">
+                    <div class="form-group">
+                        <label>현재 PCV (%)</label>
+                        <input type="number" id="tfCurrPcv" class="input-field font-semibold" step="0.1" oninput="calcTransfusion()">
+                    </div>
+                    <div class="form-group">
+                        <label>목표 PCV (%)</label>
+                        <input type="number" id="tfTargetPcv" class="input-field font-semibold" step="0.1" oninput="calcTransfusion()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6-2. 알부민 폼 -->
+            <div id="tfAlbuminForm" class="hidden bg-amber-50/40 p-4 rounded-xl border border-amber-100 mt-4">
+                <div class="input-group">
+                    <label>체중 (kg)</label>
+                    <input type="number" id="tfAlbWeight" class="input-field font-bold text-lg" step="0.1" oninput="calcTransfusion()">
+                </div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>현재 알부민 (g/dL)</label>
+                        <input type="number" id="tfCurrAlb" class="input-field font-semibold" step="0.1" oninput="calcTransfusion()">
+                    </div>
+                    <div class="form-group">
+                        <label>목표 알부민 (g/dL)</label>
+                        <input type="number" id="tfTargetAlb" class="input-field font-semibold" step="0.1" oninput="calcTransfusion()">
+                    </div>
+                </div>
+                <div class="input-group !mb-0">
+                    <label>알부민 농도 선택</label>
+                    <select id="tfAlbConc" class="input-field font-semibold text-gray-800" onchange="calcTransfusion()">
+                        <option value="5">5% 알부민 (5g / 100ml = 0.05g/ml)</option>
+                        <option value="20" selected>20% 알부민 (20g / 100ml = 0.2g/ml)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 6-3. hIVIG 폼 -->
+            <div id="tfHivigForm" class="hidden bg-purple-50/40 p-4 rounded-xl border border-purple-100 mt-4">
+                <div class="input-group">
+                    <label>체중 (kg)</label>
+                    <input type="number" id="tfHivigWeight" class="input-field font-bold text-lg" step="0.1" oninput="calcTransfusion()">
+                </div>
+                <div class="input-group !mb-0">
+                    <label>목표 용량 <span class="text-xs text-purple-600 font-bold ml-1">(단위: g/kg, 권장용량: 0.5~1.5g/kg)</span></label>
+                    <input type="number" id="tfHivigDose" class="input-field font-semibold" step="0.1" oninput="calcTransfusion()">
+                </div>
+            </div>
+
+            <!-- 수혈 탭 결과창 -->
+            <div id="tfResultBox" class="hidden mt-5 bg-red-50 p-5 rounded-xl border border-red-200 text-center shadow-sm">
+                <div id="tfResultText" class="text-lg font-bold text-gray-800"></div>
+                <div id="tfResultSub" class="text-xs text-gray-500 mt-2 font-medium"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="factorModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeFactorModal()">&times;</span>
+        <h3 class="text-lg font-bold text-purple-700 mb-3 mt-1">활동계수 (Factor) 가이드</h3>
+        
+        <div id="modalDog" style="display:block;">
+            <table>
+                <tr><th>생리적 상태 (개)</th><th>계수</th></tr>
+                <tr><td>중성화된 성견</td><td>1.6</td></tr>
+                <tr><td>중성화 안 된 성견</td><td>1.8</td></tr>
+                <tr><td>비만 경향 / 실내견</td><td>1.2 ~ 1.4</td></tr>
+                <tr><td>체중 감량</td><td>1.0</td></tr>
+                <tr><td>자견 (4개월 미만)</td><td>3.0</td></tr>
+                <tr><td>자견 (4개월 ~ 성견 전)</td><td>2.0</td></tr>
+                <tr><td>임신견 (마지막 3주)</td><td>3.0</td></tr>
+                <tr><td>수유견</td><td>4.0 ~ 8.0</td></tr>
+                <tr><td>노령견</td><td>1.4</td></tr>
+            </table>
+        </div>
+        
+        <div id="modalCat" style="display:none;">
+            <table>
+                <tr><th>생리적 상태 (고양이)</th><th>계수</th></tr>
+                <tr><td>중성화된 성묘</td><td>1.2</td></tr>
+                <tr><td>중성화 안 된 성묘</td><td>1.4</td></tr>
+                <tr><td>비만 경향 / 활동량 적음</td><td>1.0</td></tr>
+                <tr><td>체중 감량</td><td>0.8</td></tr>
+                <tr><td>자묘 (성장기)</td><td>2.5</td></tr>
+                <tr><td>임신묘</td><td>1.6 ~ 2.0</td></tr>
+                <tr><td>수유묘</td><td>2.0 ~ 6.0</td></tr>
+                <tr><td>노령묘 (11세 이상)</td><td>1.1 ~ 1.6</td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 서비스 워커 등록 (PWA - 오프라인 캐시)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => { console.log('Service Worker 등록 성공:', registration.scope); })
+                .catch(error => { console.log('Service Worker 등록 실패:', error); });
+        });
+    }
+
+    // Tab Navigation
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    // ==========================================
+    // 1. 수액 및 약물 계산기
+    // ==========================================
+    let currentFluidSpecies = 'dog';
+    
+    function setFluidSpecies(sp, e) {
+        currentFluidSpecies = sp;
+        document.querySelectorAll('#fluidSpeciesGroup .btn-toggle').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        calcFluid();
+    }
+
+    function calcFluid() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const multi = parseFloat(document.getElementById('fluidMultiplier').value);
+        const maintRateEl = document.getElementById('fluidMaintRate');
+        const targetRateEl = document.getElementById('fluidTargetRate');
+        
+        if(!w || isNaN(w)) { 
+            maintRateEl.value = "0.0";
+            targetRateEl.value = "0.0";
+            return; 
+        }
+        
+        const dayVol = currentFluidSpecies === 'dog' ? 132 * Math.pow(w, 0.75) : 80 * Math.pow(w, 0.75);
+        const hrRate = dayVol / 24;
+        
+        maintRateEl.value = hrRate.toFixed(1);
+        targetRateEl.value = (hrRate * (multi || 1)).toFixed(1);
+        
+        // 약물 재계산 연동
+        const drug = document.getElementById('fluidDrugSelect').value;
+        if (drug === 'dobutamine') calcDobutamine();
+        else if (drug === 'furosemide') calcFurosemide();
+        else if (drug === 'nitroprusside') calcNitroprusside();
+        else if (drug === 'norepinephrine') calcNorepinephrine();
+        else if (drug === 'vasopressin') calcVasopressin();
+        else if (drug === 'metoclopramide') calcMetoclopramide();
+        else if (drug === 'phenylephrine') calcPhenylephrine();
+        else if (drug === 'diltiazem') calcDiltiazem();
+        else if (drug === 'dopamine') calcDopamine();
+        else if (drug === 'calcium_gluconate') calcCalciumGluconate();
+        else if (drug === 'phosphorus') calcPhosphorus();
+        else if (drug === 'cefotaxime') calcCefotaxime();
+        else if (drug === 'famotidine_cri') calcFamotidineCri();
+        else if (drug === 'nicardipine') calcNicardipine();
+        else if (drug === 'kcl') calcKcl();
+        else if (drug === 'dka') calcDka();
+        else if (drug === 'tpa') calctPA();
+        else if (drug === 'mgso4') { document.getElementById('mgso4FluidRate').value = targetRateEl.value; calcMgso4(); }
+        else if (drug === 'lidocaine') calcLidocaine();
+        else if (drug === 'esmolol') calcEsmolol();
+        else if (drug === 'hydrocortisone') calcHydrocortisone();
+    }
+    
+    function handleFluidDrugSelect() {
+        const drug = document.getElementById('fluidDrugSelect').value;
+        const container = document.getElementById('dynamicDrugContainer');
+        const formIds = [
+            'dobutamineForm', 'furosemideForm', 'nitroprussideForm', 'norepinephrineForm',
+            'vasopressinForm', 'metoclopramideForm', 'phenylephrineForm', 'diltiazemForm',
+            'dopamineForm', 'calciumGluconateForm', 'phosphorusForm', 'cefotaximeForm',
+            'famotidineForm', 'nicardipineForm', 'kclForm', 'dkaForm', 'tpaForm', 'mgso4Form',
+            'lidocaineForm', 'esmololForm', 'hydrocortisoneForm'
+        ];
+        const resText = document.getElementById('drugResultText');
+        
+        container.classList.add('hidden');
+        resText.classList.add('hidden');
+        formIds.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
+        
+        if(drug === 'none') return;
+        
+        container.classList.remove('hidden');
+        const activeForm = document.getElementById(drug.replace('_cri', '') + 'Form') || 
+                           document.getElementById(drug + 'Form');
+        
+        if (drug === 'calcium_gluconate') document.getElementById('calciumGluconateForm').classList.remove('hidden');
+        else if (drug === 'famotidine_cri') document.getElementById('famotidineForm').classList.remove('hidden');
+        else if (activeForm) activeForm.classList.remove('hidden');
+
+        // 함수 호출
+        if (drug === 'dobutamine') calcDobutamine();
+        else if (drug === 'furosemide') calcFurosemide();
+        else if (drug === 'nitroprusside') calcNitroprusside();
+        else if (drug === 'norepinephrine') calcNorepinephrine();
+        else if (drug === 'vasopressin') calcVasopressin();
+        else if (drug === 'metoclopramide') calcMetoclopramide();
+        else if (drug === 'phenylephrine') calcPhenylephrine();
+        else if (drug === 'diltiazem') calcDiltiazem();
+        else if (drug === 'dopamine') calcDopamine();
+        else if (drug === 'calcium_gluconate') calcCalciumGluconate();
+        else if (drug === 'phosphorus') calcPhosphorus();
+        else if (drug === 'cefotaxime') calcCefotaxime();
+        else if (drug === 'famotidine_cri') calcFamotidineCri();
+        else if (drug === 'nicardipine') calcNicardipine();
+        else if (drug === 'kcl') calcKcl();
+        else if (drug === 'dka') calcDka();
+        else if (drug === 'tpa') calctPA();
+        else if (drug === 'mgso4') { document.getElementById('mgso4FluidRate').value = document.getElementById('fluidTargetRate').value; calcMgso4(); }
+        else if (drug === 'lidocaine') calcLidocaine();
+        else if (drug === 'esmolol') calcEsmolol();
+        else if (drug === 'hydrocortisone') calcHydrocortisone();
+    }
+    
+    function handleFluidDrugSelect() {
+        const drug = document.getElementById('fluidDrugSelect').value;
+        const container = document.getElementById('dynamicDrugContainer');
+        const formIds = [
+            'dobutamineForm', 'furosemideForm', 'nitroprussideForm', 'norepinephrineForm',
+            'vasopressinForm', 'metoclopramideForm', 'phenylephrineForm', 'diltiazemForm',
+            'dopamineForm', 'calciumGluconateForm', 'phosphorusForm', 'cefotaximeForm',
+            'famotidineForm', 'nicardipineForm', 'kclForm', 'dkaForm', 'tpaForm', 'mgso4Form',
+            'lidocaineForm', 'esmololForm'
+        ];
+        const resText = document.getElementById('drugResultText');
+        
+        container.classList.add('hidden');
+        resText.classList.add('hidden');
+        formIds.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
+        
+        if(drug === 'none') return;
+        
+        container.classList.remove('hidden');
+        const activeForm = document.getElementById(drug.replace('_cri', '') + 'Form') || 
+                           document.getElementById(drug + 'Form');
+        
+        if (drug === 'calcium_gluconate') document.getElementById('calciumGluconateForm').classList.remove('hidden');
+        else if (drug === 'famotidine_cri') document.getElementById('famotidineForm').classList.remove('hidden');
+        else if (activeForm) activeForm.classList.remove('hidden');
+
+        // 함수 호출
+        if (drug === 'dobutamine') calcDobutamine();
+        else if (drug === 'furosemide') calcFurosemide();
+        else if (drug === 'nitroprusside') calcNitroprusside();
+        else if (drug === 'norepinephrine') calcNorepinephrine();
+        else if (drug === 'vasopressin') calcVasopressin();
+        else if (drug === 'metoclopramide') calcMetoclopramide();
+        else if (drug === 'phenylephrine') calcPhenylephrine();
+        else if (drug === 'diltiazem') calcDiltiazem();
+        else if (drug === 'dopamine') calcDopamine();
+        else if (drug === 'calcium_gluconate') calcCalciumGluconate();
+        else if (drug === 'phosphorus') calcPhosphorus();
+        else if (drug === 'cefotaxime') calcCefotaxime();
+        else if (drug === 'famotidine_cri') calcFamotidineCri();
+        else if (drug === 'nicardipine') calcNicardipine();
+        else if (drug === 'kcl') calcKcl();
+        else if (drug === 'dka') calcDka();
+        else if (drug === 'tpa') calctPA();
+        else if (drug === 'mgso4') { document.getElementById('mgso4FluidRate').value = document.getElementById('fluidTargetRate').value; calcMgso4(); }
+        else if (drug === 'lidocaine') calcLidocaine();
+        else if (drug === 'esmolol') calcEsmolol();
+    }
+
+    function calcMgso4() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('mgso4Dose').value);
+        const fluidVol = parseFloat(document.getElementById('mgso4FluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('mgso4FluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        
+        // 하루 요구량 (mEq) 기반 수식: (dose * w * fluidVol) / (24hr * 속도 * 0.8 mEq/ml)
+        const drugVol = (dose * w * fluidVol) / (24 * fluidRate * 0.8);
+        const finalFluidVol = fluidVol - drugVol;
+        
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 10% MgSO4 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcLidocaine() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('lidoDose').value);
+        const fluidVol = parseFloat(document.getElementById('lidoFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('lidoFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        const guideEl = document.getElementById('lidoDoseGuide');
+
+        if (guideEl) {
+            if (currentFluidSpecies === 'dog') {
+                guideEl.innerText = "단위: μg/kg/min, 권장용량: 30~80";
+            } else {
+                guideEl.innerText = "단위: μg/kg/min, 권장용량: 10~20 (최대 40)";
+            }
+        }
+
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+
+        // CRI 약물양(ml): (dose(ug) * w * 60 * fluidVol) / (fluidRate * 1000 * 20mg/ml)
+        const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 1000 * 20);
+        const finalFluidVol = fluidVol - drugVol;
+
+        let loadingHtml = "";
+        let warningHtml = "";
+
+        if (currentFluidSpecies === 'dog') {
+            const loadingMl = (w * 2) / 20; // 2mg/kg, 20mg/ml
+            loadingHtml = `
+                <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-left">
+                    <div class="font-bold text-indigo-950 text-sm">
+                        🚀 로딩: <span class="text-xl font-extrabold text-pink-600">${loadingMl.toFixed(2)}</span> ml
+                        <span class="text-xs text-gray-500 font-normal">(2mg/kg)</span>
+                        <span class="text-xs text-indigo-700 font-bold ml-2">효과없으면 5~10분간격으로 4회까지</span>
+                    </div>
+                </div>`;
+        } else {
+            const loadingMl = (w * 0.25) / 20; // 0.25mg/kg, 20mg/ml
+            loadingHtml = `
+                <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-left">
+                    <div class="font-bold text-indigo-950 text-sm">
+                        🚀 로딩: <span class="text-xl font-extrabold text-pink-600">${loadingMl.toFixed(2)}</span> ml
+                        <span class="text-xs text-gray-500 font-normal">(0.25mg/kg)</span>
+                        <span class="text-xs text-purple-700 font-bold ml-2">2~5분에 걸쳐 천천히 iv</span>
+                    </div>
+                </div>`;
+            warningHtml = `
+                <div class="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 p-2.5 rounded-lg font-bold text-center">
+                    ⚠️ 경고 : 동공확장, 유연, 근육떨림 모니터링 필요
+                </div>`;
+        }
+
+        resText.innerHTML = `
+            ${loadingHtml}
+            <div class="text-base text-indigo-950 font-bold">
+                수액 ${finalFluidVol.toFixed(2)}ml에 리도카인 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+            </div>
+            ${warningHtml}
+        `;
+        resText.classList.remove('hidden');
+    }
+
+    function calcEsmolol() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('esmoDose').value);
+        const fluidVol = parseFloat(document.getElementById('esmoFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('esmoFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+
+        // 로딩: 250~500 ug/kg (농도 10mg/ml = 10000ug/ml) -> 0.025~0.05 ml/kg
+        const loadMin = (w * 0.25) / 10;
+        const loadMax = (w * 0.5) / 10;
+
+        // 종별 심박 기준
+        const hrTarget = (currentFluidSpecies === 'dog') ? '심박 140회 이하' : '심박 200회 이하';
+
+        // CRI 믹스 계산: (dose(ug) * w * 60 * fluidVol) / (fluidRate * 1000 * 10mg/ml)
+        const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 10000);
+        const finalFluidVol = fluidVol - drugVol;
+
+        resText.innerHTML = `
+            <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-left">
+                <div class="font-bold text-indigo-950 text-sm">
+                    🚀 로딩: <span class="text-xl font-extrabold text-pink-600">${loadMin.toFixed(2)} ~ ${loadMax.toFixed(2)}</span> ml
+                    <span class="text-xs text-gray-500 font-normal">(250~500μg/kg)</span>
+                </div>
+                <div class="text-xs text-indigo-700 font-bold mt-1.5">
+                    ↳ 로딩 후 5분 사이로 <span class="text-pink-600 font-extrabold">${hrTarget}</span> 확인 시 CRI 연결
+                </div>
+            </div>
+            <div class="text-base text-indigo-950 font-bold">
+                수액 ${finalFluidVol.toFixed(2)}ml에 에스몰롤 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+            </div>
+            <div class="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 p-2.5 rounded-lg font-bold text-center">
+                ⚠️ 경고 : 혈압모니터링, 단약시 테이퍼링 필요
+            </div>
+        `;
+        resText.classList.remove('hidden');
+    }
+
+    function calcHydrocortisone() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('hydroDose').value);
+        const fluidVol = parseFloat(document.getElementById('hydroFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('hydroFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+
+        // dose(mg/kg/hr) * w(kg) * fluidVol(ml) / (fluidRate(ml/hr) * 50mg/ml)
+        const drugVol = (dose * w * fluidVol) / (fluidRate * 50);
+        const finalFluidVol = fluidVol - drugVol;
+
+        resText.innerHTML = `
+            <div class="text-base text-indigo-950 font-bold">
+                수액 ${finalFluidVol.toFixed(2)}ml에 하이드로코티손 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+            </div>
+            <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-left space-y-1.5">
+                <div class="text-xs text-red-600 font-bold">
+                    ⚠️ 경고 : 에디슨 K&lt;5이하 경구제로 전환
+                </div>
+                <div class="text-xs text-indigo-900 font-semibold">
+                    💡 CIRCI 쇼크 해결후 하루 25%씩 감량 하거나 경구제 hydrocortisone4 : pds 1 로 전환
+                </div>
+            </div>
+        `;
+        resText.classList.remove('hidden');
+    }
+
+    function calcDobutamine() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('dobuDose').value);
+        const fluidVol = parseFloat(document.getElementById('dobuFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('dobuFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        const drugVol = (dose * w * 60 * fluidVol) / (1000 * 50 * fluidRate);
+        const finalFluidVol = fluidVol - drugVol;
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 도부타민 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcFurosemide() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('furoDose').value);
+        const fluidVol = parseFloat(document.getElementById('furoFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('furoFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        const drugVol = (dose * w * (fluidVol / fluidRate)) / 10;
+        const finalFluidVol = fluidVol - drugVol;
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 푸로세마이드 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcNitroprusside() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('nitroDose').value);
+        const fluidVol = parseFloat(document.getElementById('nitroFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('nitroFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 25000);
+        const finalFluidVol = fluidVol - drugVol;
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 니트로프루시드 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcNorepinephrine() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('norepiDose').value);
+        const fluidVol = parseFloat(document.getElementById('norepiFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('norepiFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 1000);
+        const finalFluidVol = fluidVol - drugVol;
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 노르에피네프린 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcVasopressin() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('vasoDose').value);
+        const fluidVol = parseFloat(document.getElementById('vasoFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('vasoFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 20000);
+        const finalFluidVol = fluidVol - drugVol;
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 바소프레신 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcMetoclopramide() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('metoDose').value);
+        const fluidVol = parseFloat(document.getElementById('metoFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('metoFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        const drugVol = (dose * w * fluidVol) / (fluidRate * 24 * 5);
+        const finalFluidVol = fluidVol - drugVol;
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 메토클로프로마이드 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcPhenylephrine() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('phenylDose').value);
+        const fluidVol = parseFloat(document.getElementById('phenylFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('phenylFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 10000);
+        const finalFluidVol = fluidVol - drugVol;
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 페닐에프린 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcDiltiazem() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('diltiaDose').value);
+        const fluidVol = parseFloat(document.getElementById('diltiaFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('diltiaFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+
+        // 로딩: 0.1 ~ 0.25 mg/kg (농도: 5mg/ml)
+        const loadMin = (w * 0.1) / 5;
+        const loadMax = (w * 0.25) / 5;
+        // 최대 누적 로딩: 0.75 mg/kg
+        const maxAccum = (w * 0.75) / 5;
+        // 종별 심박 기준 (개: 160회 이하, 고양이: 200회 이하)
+        const hrTarget = (currentFluidSpecies === 'dog') ? '160회 이하' : '200회 이하';
+
+        // CRI 믹스 계산: (dose(ug) * w * 60 * fluidVol) / (fluidRate * 1000 * 5mg/ml)
+        const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 5000);
+        const finalFluidVol = fluidVol - drugVol;
+
+        resText.innerHTML = `
+            <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-left">
+                <div class="font-bold text-indigo-950 text-sm">
+                    🚀 로딩: <span class="text-xl font-extrabold text-pink-600">${loadMin.toFixed(2)} ~ ${loadMax.toFixed(2)}</span> ml
+                    <span class="text-xs text-gray-500 font-normal">(0.1~0.25mg/kg)</span>
+                    <span class="text-xs text-indigo-700 font-bold ml-1">2~5분에 걸쳐 천천히 iv</span>
+                </div>
+                <div class="text-xs text-indigo-700 font-semibold mt-1.5">
+                    ↳ 10~15분마다 심박수 <span class="text-pink-600 font-extrabold">${hrTarget}</span>까지 반복
+                    <span class="text-gray-600 font-medium ml-1">(최대 <span class="text-indigo-900 font-bold">${maxAccum.toFixed(2)}</span>ml <span class="text-xs text-gray-400 font-normal">(0.75mg/kg)</span>)</span>
+                </div>
+            </div>
+            <div class="text-base text-indigo-950 font-bold">
+                수액 ${finalFluidVol.toFixed(2)}ml에 딜티아젬 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+            </div>
+            <div class="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 p-2.5 rounded-lg font-bold text-center">
+                ⚠️ 경고 : 혈압모니터링
+            </div>
+        `;
+        resText.classList.remove('hidden');
+    }
+
+    function calcDopamine() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('dopaDose').value);
+        const fluidVol = parseFloat(document.getElementById('dopaFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('dopaFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 40000);
+        const finalFluidVol = fluidVol - drugVol;
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 도파민 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        resText.classList.remove('hidden');
+    }
+    
+    function calcCalciumGluconate() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('calciumDose').value);
+        const fluidVol = parseFloat(document.getElementById('calciumFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('calciumFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        
+        const drugVol = (dose * w * fluidVol) / (fluidRate * 100);
+        const finalFluidVol = fluidVol - drugVol;
+        const elementalCalcium = dose * 0.094;
+        
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 칼슘글루코네이트 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+        <div class="mt-3 text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 p-3 rounded-lg font-bold">
+            💡 투여 중인 Elemental Calcium: <span class="text-lg">${elementalCalcium.toFixed(2)}</span> mg/kg/hr
+        </div>`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcPhosphorus() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('phosDose').value);
+        const fluidVol = parseFloat(document.getElementById('phosFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('phosFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        
+        const drugVol = (dose * w * fluidVol) / (fluidRate * 1);
+        const finalFluidVol = fluidVol - drugVol;
+        const potassiumSpeed = dose; 
+        
+        let maxRateHtml = "";
+        if (potassiumSpeed > 0.5) {
+            maxRateHtml = `<div class="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg font-bold">
+                ⚠️ 칼륨 최대 주입 속도 초과 위험! <br>현재 속도는 ${potassiumSpeed.toFixed(2)}mEq/kg/hr 이며, 0.5mEq/kg/hr 이하로 투여하세요.
+            </div>`;
+        } else {
+            maxRateHtml = `<div class="mt-2 text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 p-2 rounded-lg">
+                ✅ 포함된 칼륨 주입 속도: ${potassiumSpeed.toFixed(2)} mEq/kg/hr (안전)
+            </div>`;
+        }
+        
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 포스텐 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+        ${maxRateHtml}`;
+        resText.classList.remove('hidden');
+    }
+    
+    function calcCefotaxime() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('cefoDose').value);
+        const fluidVol = parseFloat(document.getElementById('cefoFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('cefoFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        
+        const drugVol = (dose * w * fluidVol) / (fluidRate * 200);
+        const finalFluidVol = fluidVol - drugVol;
+        const loadingMg = w * 20;
+        const loadingVol = loadingMg / 200;
+        
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 세포탁심 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+        <div class="mt-3 text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 p-3 rounded-lg font-bold">
+            🚀 <span class="text-lg">${loadingVol.toFixed(2)}</span> ml 로딩 후 속도 ${fluidRate}ml/hr로 CRI 시작
+            <div class="text-xs text-gray-500 font-normal mt-1">(로딩 용량: 20 mg/kg 기준)</div>
+        </div>`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcFamotidineCri() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('famoDose').value);
+        const fluidVol = parseFloat(document.getElementById('famoFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('famoFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        
+        const drugVol = (dose * w * fluidVol) / (fluidRate * 24 * 2);
+        const finalFluidVol = fluidVol - drugVol;
+        const loadingMg = w * 1;
+        const loadingVol = loadingMg / 2;
+        
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 파모티딘 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+        <div class="mt-3 text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 p-3 rounded-lg font-bold">
+            🚀 <span class="text-lg">${loadingVol.toFixed(2)}</span> ml 로딩 후 속도 ${fluidRate}ml/hr로 CRI 시작
+            <div class="text-xs text-gray-500 font-normal mt-1">(로딩 용량: 1 mg/kg 기준)</div>
+        </div>`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcNicardipine() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('nicaDose').value);
+        const fluidVol = parseFloat(document.getElementById('nicaFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('nicaFluidRate').value);
+        const resText = document.getElementById('drugResultText');
+        
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        
+        const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 1000);
+        const finalFluidVol = fluidVol - drugVol;
+        
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 니카르디핀 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcKcl() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const k = parseFloat(document.getElementById('kclDose').value);
+        const fluidVol = parseFloat(document.getElementById('kclFluidVol').value);
+        const multi = parseFloat(document.getElementById('fluidMultiplier').value) || 1;
+        const resText = document.getElementById('drugResultText');
+        const fluidRate = parseFloat(document.getElementById('fluidTargetRate').value); 
+        
+        if (!w || isNaN(k) || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        
+        let targetReq = 0;
+        if (k >= 3.6 && k <= 5.0) targetReq = 20;
+        else if (k >= 3.1 && k <= 3.5) targetReq = 30;
+        else if (k >= 2.6 && k <= 3.0) targetReq = 40;
+        else if (k >= 2.1 && k <= 2.5) targetReq = 60;
+        else if (k >= 0 && k <= 2.0) targetReq = 80;
+        
+        const step1 = targetReq / multi;
+        const step2 = step1 * (fluidVol / 1000);
+        
+        const fluidType = document.querySelector('input[name="kclFluidType"]:checked').value;
+        let baseK = 0;
+        if (fluidType === 'hartmann') baseK = 4;
+        else if (fluidType === 'plasmalyte') baseK = 5;
+        
+        const baseK_total = baseK * (fluidVol / 1000);
+        const step3 = step2 - baseK_total;
+        
+        let kclVol = step3 / 2;
+        if (kclVol < 0) kclVol = 0;
+        
+        const finalFluidVol = fluidVol - kclVol;
+        const totalMeqInBag = (kclVol * 2) + baseK_total;
+        const concPerMl = totalMeqInBag / fluidVol;
+        
+        let maxRateHtml = "";
+        if (concPerMl > 0) {
+            const maxRate = (0.5 * w) / concPerMl;
+            maxRateHtml = `<div class="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg font-bold">
+                ⚠️ 최대 투여 속도 제한: <span class="text-xl">${maxRate.toFixed(1)}</span> ml/hr 이하로 투여하세요 (0.5mEq/kg/hr 기준)
+            </div>`;
+        }
+        
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 KCl <span class="text-pink-600 text-xl font-extrabold mx-1">${kclVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+        <div class="text-xs text-indigo-700 mt-2 font-normal">
+            [계산식] 필요 K+: ${targetReq}mEq/L ÷ 배수(${multi}) = ${step1.toFixed(2)}mEq/L <br> 총 필요량: ${step2.toFixed(2)}mEq - 수액 자체 K+ ${baseK_total.toFixed(2)}mEq = ${step3 > 0 ? step3.toFixed(2) : 0}mEq
+        </div>
+        ${maxRateHtml}`;
+        resText.classList.remove('hidden');
+    }
+
+    function calcDka() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const k = parseFloat(document.getElementById('dkaDose').value);
+        const fluidVol = parseFloat(document.getElementById('dkaFluidVol').value);
+        const multi = parseFloat(document.getElementById('fluidMultiplier').value) || 1;
+        const fluidRate = parseFloat(document.getElementById('fluidTargetRate').value); 
+        const resText = document.getElementById('drugResultText');
+        
+        if (!w || isNaN(k) || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        
+        let targetReq = 0;
+        if (k >= 3.6 && k <= 5.0) targetReq = 30;
+        else if (k >= 3.1 && k <= 3.5) targetReq = 45;
+        else if (k >= 2.6 && k <= 3.0) targetReq = 60;
+        else if (k >= 2.1 && k <= 2.5) targetReq = 90;
+        else if (k >= 0 && k <= 2.0) targetReq = 120;
+        
+        const step1 = targetReq / multi;
+        const step2 = step1 * (fluidVol / 1000);
+        
+        const fluidType = document.querySelector('input[name="dkaFluidType"]:checked').value;
+        let baseK = 0;
+        if (fluidType === 'hartmann') baseK = 4;
+        else if (fluidType === 'plasmalyte') baseK = 5;
+        
+        const baseK_total = baseK * (fluidVol / 1000);
+        const step3 = step2 - baseK_total;
+        
+        let kclVol = 0;
+        let phosVol = 0;
+        
+        if (step3 > 0) {
+            const halfMeq = step3 / 2;
+            kclVol = halfMeq / 2; 
+            phosVol = halfMeq / 1; 
+        }
+        
+        const finalFluidVol = fluidVol - (kclVol + phosVol);
+        const totalMeqInBag = (kclVol * 2) + (phosVol * 1) + baseK_total;
+        const concPerMl = totalMeqInBag / fluidVol;
+        
+        let maxRateHtml = "";
+        if (concPerMl > 0) {
+            const maxRate = (0.5 * w) / concPerMl;
+            maxRateHtml = `<div class="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg font-bold">
+                ⚠️ 최대 투여 속도 제한: <span class="text-xl">${maxRate.toFixed(1)}</span> ml/hr 이하로 투여하세요 (0.5mEq/kg/hr 기준)
+            </div>`;
+        }
+        
+        const phosMmolPerHour = ((phosVol * 1) / fluidVol) * fluidRate / w;
+
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 KCl <span class="text-pink-600 text-xl font-extrabold mx-1">${kclVol.toFixed(2)}ml</span> 와 포스텐 <span class="text-blue-600 text-xl font-extrabold mx-1">${phosVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+        <div class="text-xs text-indigo-700 mt-2 font-normal">
+            [DKA 1.5배 보정] 필요 K+: ${targetReq}mEq/L ÷ 배수(${multi}) = ${step1.toFixed(2)}mEq/L <br> 총 필요량: ${step2.toFixed(2)}mEq - 수액 자체 K+ ${baseK_total.toFixed(2)}mEq = ${step3 > 0 ? step3.toFixed(2) : 0}mEq
+        </div>
+        <div class="mt-2 text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 p-2 rounded-lg">
+            🔹 현재 인(Phosphate) 교정 속도: ${phosMmolPerHour.toFixed(3)} mmol/kg/hr
+        </div>
+        ${maxRateHtml}`;
+        resText.classList.remove('hidden');
+    }
+
+    function calctPA() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('tpaDose').value);
+        const time = parseFloat(document.getElementById('tpaTime').value);
+        const resText = document.getElementById('drugResultText');
+        
+        if (!w || !dose || !time) { resText.classList.add('hidden'); return; }
+        
+        const conc = 1; // 1mg/ml 고정
+        const totalMg = w * dose;
+        const totalVol = totalMg / conc;
+        
+        const vol15 = totalVol * 0.1;
+        const rate15 = vol15 / 0.25; // 15분 = 0.25시간
+        
+        const volRem = totalVol * 0.9;
+        const rateRem = volRem / time;
+        
+        resText.innerHTML = `
+            <div class="text-left">
+                <div class="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="font-bold text-red-700 mb-1 text-sm">▶ 처음 15분 동안 (총량의 10%)</div>
+                    <span class="text-xl font-extrabold text-red-600">${vol15.toFixed(2)}</span> ml 투여 <br>
+                    <span class="text-xs text-red-500 font-bold">└ 설정 속도: <span class="text-base">${rate15.toFixed(2)}</span> ml/hr</span>
+                </div>
+                <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="font-bold text-blue-700 mb-1 text-sm">▶ 이후 ${time}시간 동안 (총량의 90%)</div>
+                    <span class="text-xl font-extrabold text-blue-600">${volRem.toFixed(2)}</span> ml 투여 <br>
+                    <span class="text-xs text-blue-500 font-bold">└ 설정 속도: <span class="text-base">${rateRem.toFixed(2)}</span> ml/hr</span>
+                </div>
+                <div class="mt-2 text-center text-indigo-900 font-bold bg-indigo-100 p-3 rounded-lg border border-indigo-200 shadow-sm">
+                    총 투여 용량 (농도 1mg/ml): <span class="text-2xl text-indigo-700">${totalVol.toFixed(2)}</span> ml
+                </div>
+            </div>
+        `;
+        resText.classList.remove('hidden');
+    }
+
+    // ==========================================
+    // 2. 주사제 일괄 계산
+    // ==========================================
+    const injectablesData = [
+        { name: "아모크라", dose: 12.5, conc: 60, doseUnit: "mg/kg" },
+        { name: '세파졸린 (200mg/ml)', dose: 30, conc: 200 },
+        { name: '암피실린설박탐 (375mg/ml)', dose: 22, conc: 375 },
+        { name: "오메프라졸 (Omeprazole)", dose: 0.5, conc: 10, doseUnit: "mg/kg" },
+        { name: "세포탁심 (Cefotaxime)", dose: 20, conc: 200, doseUnit: "mg/kg" },
+        { name: "메트로니다졸 (Metronidazole)", dose: 10, conc: 5, doseUnit: "mg/kg" },
+        { name: "마보플록사신 (Marbofloxacin)", dose: 2, conc: 10, doseUnit: "mg/kg" },
+        { name: "파모티딘 (Famotidine)", dose: 0.5, conc: 2, doseUnit: "mg/kg" },
+        { name: "달테파린 (Dalteparin)", dose: 150, conc: 2500, doseUnit: "IU/kg", concUnit: "IU/ml" },
+        { name: "멜록시캄 (Meloxicam)", dose: 0.2, conc: 5, doseUnit: "mg/kg" },
+        { name: "메토클로프로마이드 (Metoclopramide)", dose: 0.3, conc: 5, doseUnit: "mg/kg" },
+        { name: "온단세트론 (Ondansetron)", dose: 0.5, conc: 2, doseUnit: "mg/kg" },
+        { name: "부토르파놀 (Butorphanol)", dose: 0.2, conc: 1, doseUnit: "mg/kg" },
+        { name: "트라마돌 (Tramadol)", dose: 2, conc: 50, doseUnit: "mg/kg" },
+        { name: "덱사메타손 (Dexamethasone)", dose: 0.1, conc: 5, doseUnit: "mg/kg" }
+    ];
+
+    function calcInj() {
+        const w = parseFloat(document.getElementById('injWeight').value);
+        const container = document.getElementById('injResultContainer');
+        const tbody = document.querySelector('#injTable tbody');
+        
+        if(!w || isNaN(w)) { container.classList.add('hidden'); return; }
+        
+        if (tbody.children.length === 0) {
+            injectablesData.forEach((drug, index) => {
+                const cUnit = drug.concUnit || "mg/ml";
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="font-semibold">${drug.name}</td>
+                    <td>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="injDose_${index}" value="${drug.dose}" step="0.1" 
+                                class="w-14 px-1 py-1 border border-gray-400 rounded focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-center text-xs font-bold text-gray-800" 
+                                oninput="updateInjRow(${index})">
+                            <span class="text-xs text-gray-500">${drug.doseUnit}</span>
+                        </div>
+                    </td>
+                    <td class="text-gray-600">${drug.conc} <span class="text-xs text-gray-400">${cUnit}</span></td>
+                    <td class="val-highlight" id="injResult_${index}">0.00 ml</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        injectablesData.forEach((_, index) => { updateInjRow(index); });
+        container.classList.remove('hidden');
+    }
+
+    function updateInjRow(index) {
+        const w = parseFloat(document.getElementById('injWeight').value);
+        if(!w || isNaN(w)) return;
+        const doseInput = document.getElementById(`injDose_${index}`);
+        const resultCell = document.getElementById(`injResult_${index}`);
+        const drug = injectablesData[index];
+        const currentDose = parseFloat(doseInput.value) || 0;
+        const requiredMl = (w * currentDose) / drug.conc;
+        resultCell.innerText = `${requiredMl.toFixed(2)} ml`;
+    }
+
+    // ==========================================
+    // 3. 발작 약물
+    // ==========================================
+    function calcSz() {
+        const w = parseFloat(document.getElementById('szWeight').value);
+        const drug = document.getElementById('szDrug').value;
+        const resContainer = document.getElementById('szResultContainer');
+        const resText = document.getElementById('szResultText');
+        const resDesc = document.getElementById('szResultDesc');
+        
+        if(!w || isNaN(w) || drug === 'none') {
+            resContainer.classList.add('hidden');
+            return;
+        }
+        
+        if (drug === 'mida') {
+            const minMl = (w * 0.2) / 1;
+            const maxMl = (w * 0.5) / 1;
+            resText.innerHTML = `미다졸람 <span class="text-2xl font-extrabold text-pink-600 mx-1">${minMl.toFixed(2)} ~ ${maxMl.toFixed(2)}</span> ml`;
+            resDesc.innerHTML = '💡 권장용량: 0.2 ~ 0.5 mg/kg (농도: 1 mg/ml)';
+            resContainer.classList.remove('hidden');
+            
+        } else if (drug === 'mida_cri') {
+            const dose = parseFloat(document.getElementById('szMidaCriDose').value);
+            const fluidVol = parseFloat(document.getElementById('szFluidVol').value);
+            const fluidRate = parseFloat(document.getElementById('szFluidRate').value);
+            
+            if (!dose || isNaN(dose) || !fluidVol || !fluidRate) { resContainer.classList.add('hidden'); return; }
+            const drugVol = (dose * w * fluidVol) / (fluidRate * 1);
+            const finalFluidVol = fluidVol - drugVol;
+            
+            resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 미다졸람 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 넣고 <span class="text-blue-600 text-xl font-extrabold mx-1">${fluidRate}</span> ml/hr의 속도로`;
+            resDesc.innerHTML = '💡 권장용량: 0.1~2.5 mg/kg/hr (농도: 1 mg/ml)';
+            resContainer.classList.remove('hidden');
+            
+        } else if (drug === 'prop_cri_pure') {
+            const loadMin = (w * 1) / 10;
+            const loadMax = (w * 4) / 10;
+            const maintMin = (w * 0.1 * 60) / 10; 
+            const maintMax = (w * 0.6 * 60) / 10;
+            
+            resText.innerHTML = `
+                <div class="mb-1 text-base text-purple-800">로딩: <span class="text-2xl font-extrabold text-pink-600 mx-1">${loadMin.toFixed(2)} ~ ${loadMax.toFixed(2)}</span> ml</div>
+                <div class="text-xs font-bold text-red-500 mb-3">경련 없어질때까지 천천히 IV</div>
+                <div class="text-base text-purple-800">유지속도: <span class="text-xl font-bold text-indigo-600 mx-1">${maintMin.toFixed(2)} ~ ${maintMax.toFixed(2)}</span> ml/hr</div>
+            `;
+            resDesc.innerHTML = '💡 권장용량: 로딩 1~4mg/kg / 유지 0.1~0.6mg/kg/min (농도: 10mg/ml)';
+            resContainer.classList.remove('hidden');
+            
+        } else if (drug === 'prop_cri_mix') {
+            const dose = parseFloat(document.getElementById('szPropDose').value);
+            const fluidVol = parseFloat(document.getElementById('szFluidVol').value);
+            const fluidRate = parseFloat(document.getElementById('szFluidRate').value);
+            
+            if (!dose || isNaN(dose) || !fluidVol || !fluidRate) { resContainer.classList.add('hidden'); return; }
+            
+            const loadMin = (w * 1) / 10;
+            const loadMax = (w * 4) / 10;
+            const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 10);
+            const finalFluidVol = fluidVol - drugVol;
+            
+            resText.innerHTML = `
+                <div class="mb-1 text-sm text-purple-800">로딩(1~4mg/kg): <span class="text-xl font-extrabold text-pink-600 mx-1">${loadMin.toFixed(2)} ~ ${loadMax.toFixed(2)}</span> ml</div>
+                <div class="text-xs font-bold text-red-500 mb-3">경련 없어질때까지 천천히 IV</div>
+                <div class="pt-2 border-t border-purple-200">
+                    수액 ${finalFluidVol.toFixed(2)}ml에 프로포폴 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 넣고 <span class="text-blue-600 text-xl font-extrabold mx-1">${fluidRate}</span> ml/hr의 속도로
+                </div>
+            `;
+            resDesc.innerHTML = '💡 농도: 10mg/ml';
+            resContainer.classList.remove('hidden');
+
+        } else if (drug === 'leve') {
+            const loadMl = (w * 60) / 100;
+            const minMl = (w * 20) / 100;
+            const maxMl = (w * 30) / 100;
+            resText.innerHTML = `
+                <div class="mb-2 text-base text-purple-800">로딩(60mg/kg): <span class="text-2xl font-extrabold text-pink-600 mx-1">${loadMl.toFixed(2)}</span> ml</div>
+                <div class="text-base text-purple-800">유지(20~30mg/kg): <span class="text-xl font-bold text-indigo-600 mx-1">${minMl.toFixed(2)} ~ ${maxMl.toFixed(2)}</span> ml</div>
+            `;
+            resDesc.innerHTML = '💡 권장용량: 로딩 60mg/kg / 유지 20~30mg/kg (농도: 100mg/ml)';
+            resContainer.classList.remove('hidden');
+
+        } else if (drug === 'pheno') {
+            const minMl = (w * 12) / 100;
+            const maxMl = (w * 18) / 100;
+            const minSplit = minMl / 4;
+            const maxSplit = maxMl / 4;
+            resText.innerHTML = `
+                <div class="mb-2 text-base text-purple-800">로딩(12~18mg/kg): <span class="text-xl font-extrabold text-pink-600 mx-1">${minMl.toFixed(2)} ~ ${maxMl.toFixed(2)}</span> ml</div>
+                <div class="text-sm font-bold text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                    🔥 위 용량을 4회로 나누어:<br>
+                    <span class="text-xl font-extrabold">${minSplit.toFixed(2)} ~ ${maxSplit.toFixed(2)} ml</span> 를 30분 간격으로 4회 투여
+                </div>
+            `;
+            resDesc.innerHTML = '💡 농도: 100mg/ml';
+            resContainer.classList.remove('hidden');
+            
+        } else if (drug === 'medeto_cri') {
+            const dose = parseFloat(document.getElementById('szMedetoCriDose').value);
+            const fluidVol = parseFloat(document.getElementById('szFluidVol').value);
+            const fluidRate = parseFloat(document.getElementById('szFluidRate').value);
+            
+            if (!dose || isNaN(dose) || !fluidVol || !fluidRate) { resContainer.classList.add('hidden'); return; }
+            
+            const drugVol = (dose * w * fluidVol) / (fluidRate * 1000);
+            const finalFluidVol = fluidVol - drugVol;
+            
+            resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 메데토미딘 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 넣고 <span class="text-blue-600 text-xl font-extrabold mx-1">${fluidRate}</span> ml/hr의 속도로`;
+            resDesc.innerHTML = '💡 권장용량: 1~6 μg/kg/hr (농도: 1 mg/ml)';
+            resContainer.classList.remove('hidden');
+            
+        } else if (drug === 'keta_cri') {
+            const dose = parseFloat(document.getElementById('szKetaCriDose').value);
+            const fluidVol = parseFloat(document.getElementById('szFluidVol').value);
+            const fluidRate = parseFloat(document.getElementById('szFluidRate').value);
+            
+            if (!dose || isNaN(dose) || !fluidVol || !fluidRate) { resContainer.classList.add('hidden'); return; }
+            
+            const loadMin = (w * 3) / 50;
+            const loadMax = (w * 5) / 50;
+            const drugVol = (dose * w * fluidVol) / (fluidRate * 50);
+            const finalFluidVol = fluidVol - drugVol;
+            
+            resText.innerHTML = `
+                <div class="mb-1 text-sm text-purple-800">로딩(3~5mg/kg): <span class="text-xl font-extrabold text-pink-600 mx-1">${loadMin.toFixed(2)} ~ ${loadMax.toFixed(2)}</span> ml 천천히 IV</div>
+                <div class="pt-2 border-t border-purple-200 mt-2">
+                    수액 ${finalFluidVol.toFixed(2)}ml에 케타민 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 넣고 <span class="text-blue-600 text-xl font-extrabold mx-1">${fluidRate}</span> ml/hr의 속도로
+                </div>
+            `;
+            resDesc.innerHTML = '💡 권장용량: 0.1~0.5 mg/kg/hr (농도: 50 mg/ml)';
+            resContainer.classList.remove('hidden');
+        } else if (drug === 'alfa_cri') {
+            const dose = parseFloat(document.getElementById('szAlfaCriDose').value);
+            const fluidVol = parseFloat(document.getElementById('szFluidVol').value);
+            const fluidRate = parseFloat(document.getElementById('szFluidRate').value);
+            
+            if (!dose || isNaN(dose) || !fluidVol || !fluidRate) { resContainer.classList.add('hidden'); return; }
+            
+            // 로딩: 0.5 ~ 3 mg/kg, 농도: 10 mg/ml
+            const loadMin = (w * 0.5) / 10;
+            const loadMax = (w * 3) / 10;
+            // CRI 약물양(ml): dose(mg/kg/hr) * w(kg) * fluidVol(ml) / (fluidRate(ml/hr) * 10mg/ml)
+            const drugVol = (dose * w * fluidVol) / (fluidRate * 10);
+            const finalFluidVol = fluidVol - drugVol;
+            
+            resText.innerHTML = `
+                <div class="mb-1 text-sm text-purple-800">
+                    로딩: <span class="text-xl font-extrabold text-pink-600 mx-1">${loadMin.toFixed(2)} ~ ${loadMax.toFixed(2)}</span> ml
+                    <span class="text-xs text-gray-500 font-normal">(0.5~3mg/kg)</span>
+                </div>
+                <div class="pt-2 border-t border-purple-200 mt-2">
+                    수액 ${finalFluidVol.toFixed(2)}ml에 알팍산 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 넣고 <span class="text-blue-600 text-xl font-extrabold mx-1">${fluidRate}</span> ml/hr의 속도로
+                </div>
+            `;
+            resDesc.innerHTML = '💡 단위: mg/kg/hr, 권장: 경련 6~9, 삽관진정 1~3 (농도: 10mg/ml)';
+            resContainer.classList.remove('hidden');
+        }
+    }
+
+    function handleSzSelect() {
+        const drug = document.getElementById('szDrug').value;
+        const criInputs = document.getElementById('szCriInputs');
+        const midaCriDoseGroup = document.getElementById('midaCriDoseGroup');
+        const propMixDoseGroup = document.getElementById('propMixDoseGroup');
+        const medetoCriDoseGroup = document.getElementById('medetoCriDoseGroup');
+        const ketaCriDoseGroup = document.getElementById('ketaCriDoseGroup');
+        const alfaCriDoseGroup = document.getElementById('alfaCriDoseGroup');
+        
+        if(drug === 'mida_cri' || drug === 'prop_cri_mix' || drug === 'medeto_cri' || drug === 'keta_cri' || drug === 'alfa_cri') {
+            criInputs.classList.remove('hidden');
+            if(drug === 'mida_cri') {
+                midaCriDoseGroup.classList.remove('hidden');
+                propMixDoseGroup.classList.add('hidden');
+                if(medetoCriDoseGroup) medetoCriDoseGroup.classList.add('hidden');
+                if(ketaCriDoseGroup) ketaCriDoseGroup.classList.add('hidden');
+                if(alfaCriDoseGroup) alfaCriDoseGroup.classList.add('hidden');
+            } else if (drug === 'prop_cri_mix') {
+                midaCriDoseGroup.classList.add('hidden');
+                propMixDoseGroup.classList.remove('hidden');
+                if(medetoCriDoseGroup) medetoCriDoseGroup.classList.add('hidden');
+                if(ketaCriDoseGroup) ketaCriDoseGroup.classList.add('hidden');
+                if(alfaCriDoseGroup) alfaCriDoseGroup.classList.add('hidden');
+            } else if (drug === 'medeto_cri') {
+                midaCriDoseGroup.classList.add('hidden');
+                propMixDoseGroup.classList.add('hidden');
+                if(medetoCriDoseGroup) medetoCriDoseGroup.classList.remove('hidden');
+                if(ketaCriDoseGroup) ketaCriDoseGroup.classList.add('hidden');
+                if(alfaCriDoseGroup) alfaCriDoseGroup.classList.add('hidden');
+            } else if (drug === 'keta_cri') {
+                midaCriDoseGroup.classList.add('hidden');
+                propMixDoseGroup.classList.add('hidden');
+                if(medetoCriDoseGroup) medetoCriDoseGroup.classList.add('hidden');
+                if(ketaCriDoseGroup) ketaCriDoseGroup.classList.remove('hidden');
+                if(alfaCriDoseGroup) alfaCriDoseGroup.classList.add('hidden');
+            } else if (drug === 'alfa_cri') {
+                midaCriDoseGroup.classList.add('hidden');
+                propMixDoseGroup.classList.add('hidden');
+                if(medetoCriDoseGroup) medetoCriDoseGroup.classList.add('hidden');
+                if(ketaCriDoseGroup) ketaCriDoseGroup.classList.add('hidden');
+                if(alfaCriDoseGroup) alfaCriDoseGroup.classList.remove('hidden');
+            }
+        } else {
+            criInputs.classList.add('hidden');
+            midaCriDoseGroup.classList.add('hidden');
+            propMixDoseGroup.classList.add('hidden');
+            if(medetoCriDoseGroup) medetoCriDoseGroup.classList.add('hidden');
+            if(ketaCriDoseGroup) ketaCriDoseGroup.classList.add('hidden');
+            if(alfaCriDoseGroup) alfaCriDoseGroup.classList.add('hidden');
+        }
+        
+        calcSz();
+    }
+
+    // ==========================================
+    // 4. 사료량 계산기
+    // ==========================================
+    let currentFeedSpecies = 'dog';
+    let currentFeedMode = 'normal';
+
+    const feedData = {
+        dog: {
+            dry: {
+                royal: [
+                    {name: 'Renal', kcal: 3984}, {name: 'Gastrointestinal', kcal: 4126}, 
+                    {name: 'Gastrointestinal Lowfat', kcal: 3464}, {name: 'Hepatic', kcal: 3906}, 
+                    {name: 'Hypoallergenic', kcal: 4070}, {name: 'Hypoallergenic Moderate Calorie', kcal: 3722},
+                    {name: 'Urinary S/O', kcal: 3878}, {name: 'Urinary S/O Small Dog', kcal: 3839}, 
+                    {name: 'Urinary S/O Moderate Calorie', kcal: 3312},
+                    {name: 'Satiety Small Dog', kcal: 2589}, {name: 'Cardiac', kcal: 4158}, 
+                    {name: 'Mini Indoor Adult', kcal: 3781}, {name: 'Mini Indoor Puppy', kcal: 3959}
+                ],
+                hills: [
+                    {name: 'w/d', kcal: 3087}, {name: 'Biome', kcal: 3327}, {name: 'u/d', kcal: 3986}
+                ]
+            },
+            wet: { 
+                royal: [
+                    {name: 'Renal', kcal: 1586}, {name: 'Gastrointestinal', kcal: 1104},
+                    {name: 'Gastrointestinal Lowfat', kcal: 940}, {name: 'Recovery', kcal: 1146},
+                    {name: 'Recovery Liquid', kcal: 1000}, {name: 'GI Low Liquid', kcal: 1000},
+                    {name: 'Renal Liquid', kcal: 1500},
+                    {name: 'Hepatic', kcal: 1415}, {name: 'Hypoallergenic', kcal: 913},
+                    {name: 'Urinary S/O', kcal: 956}, {name: 'Diabetic Special', kcal: 819}
+                ], 
+                hills: [
+                    {name: 'i/d', kcal: 748}, {name: 'i/d Lowfat', kcal: 787},
+                    {name: 'a/d', kcal: 1262}, {name: 'z/d', kcal: 979},
+                    {name: 'c/d', kcal: 752}, {name: 'k/d', kcal: 995},
+                    {name: 'w/d', kcal: 569}, {name: 'l/d', kcal: 1526}, {name: 'Onc', kcal: 909}
+                ]
+            }
+        },
+        cat: {
+            dry: {
+                royal: [
+                    {name: '레날', kcal: 3919}, {name: 'Gastrointestinal Hydrolysed', kcal: 4037},
+                    {name: 'Gastrointestinal', kcal: 4095}, {name: 'Urinary S/O', kcal: 3659},
+                    {name: 'Hypoallergenic', kcal: 4087}, {name: 'Satiety', kcal: 3074},
+                    {name: '마더앤 베이비', kcal: 4458}, {name: '키튼', kcal: 4044},
+                    {name: '피트', kcal: 3830}, {name: '인도어', kcal: 3750}
+                ],
+                hills: [
+                    {name: 'i/d', kcal: 3934},
+                    {name: 'c/d 멀티케어', kcal: 3844},
+                    {name: 'z/d', kcal: 3847},
+                    {name: 'g/i biome', kcal: 3807},
+                    {name: 'w/d', kcal: 3225}
+                ]
+            },
+            wet: {
+                royal: [
+                    {name: 'Gastrointestinal Pouch', kcal: 966}, {name: 'Gastrointestinal Fiber Response', kcal: 750},
+                    {name: 'Renal', kcal: 1053}, {name: 'Renal Fish', kcal: 950},
+                    {name: 'Renal Chicken', kcal: 1177}, {name: 'Recovery', kcal: 1088},
+                    {name: 'Recovery Liquid', kcal: 1000}, {name: 'Renal Liquid', kcal: 1000},
+                    {name: 'Kitten Instinct', kcal: 688}, {name: 'Instinct', kcal: 600}
+                ],
+                hills: [
+                    {name: 'a/d', kcal: 1262}, {name: 'z/d', kcal: 1109},
+                    {name: 'k/d', kcal: 1165}, {name: 'i/d', kcal: 1100},
+                    {name: 'c/d', kcal: 839}, {name: 'Onc', kcal: 936},
+                    {name: 'Biome', kcal: 826}
+                ]
+            }
+        }
+    };
+
+    function setFeedSpecies(sp, e) {
+        currentFeedSpecies = sp;
+        document.querySelectorAll('#feedSpeciesGroup .btn-toggle').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        document.getElementById('activityFactor').value = 1;
+        
+        // 종 변경 시 기존 모든 사료 줄 업데이트
+        document.querySelectorAll('.feed-diet-row, .eaten-diet-row, .force-diet-row').forEach(row => {
+            updateRowOptions(row);
+        });
+        triggerFeedCalc();
+    }
+
+    function triggerFeedCalc() {
+        if (currentFeedMode === 'normal') calcFeed();
+        else calcForceFeed();
+    }
+
+    function setFeedMode(mode) {
+        currentFeedMode = mode;
+        document.getElementById('modeBtnNormal').classList.remove('active');
+        document.getElementById('modeBtnForce').classList.remove('active');
+        
+        if (mode === 'normal') {
+            document.getElementById('modeBtnNormal').classList.add('active');
+            document.getElementById('normalFeedSection').classList.remove('hidden');
+            document.getElementById('forceFeedSection').classList.add('hidden');
+            calcFeed();
+        } else {
+            document.getElementById('modeBtnForce').classList.add('active');
+            document.getElementById('normalFeedSection').classList.add('hidden');
+            document.getElementById('forceFeedSection').classList.remove('hidden');
+            if(document.getElementById('eatenRowsContainer').children.length === 0) addEatenRow();
+            if(document.getElementById('forceDietContainer').children.length === 0) initForceDiet();
+            calcForceFeed();
+        }
+    }
+
+    // 동적으로 사료 선택 행 추가 (일반)
+    function addFeedRow() {
+        const container = document.getElementById('feedRowsContainer');
+        const row = document.createElement('div');
+        row.className = "feed-diet-row flex flex-col gap-2 p-3 bg-white border border-pink-100 rounded-lg relative shadow-sm";
+        row.innerHTML = `
+            <div class="flex gap-2 pr-6">
+                <select class="type-select input-field !py-1.5 !text-sm flex-1" onchange="updateRowOptions(this.parentElement.parentElement); triggerFeedCalc();">
+                    <option value="dry">건식 (Dry)</option>
+                    <option value="wet">습식 (Wet)</option>
+                </select>
+                <select class="brand-select input-field !py-1.5 !text-sm flex-1" onchange="updateRowOptions(this.parentElement.parentElement); triggerFeedCalc();">
+                    <option value="royal">로얄캐닌</option>
+                    <option value="hills">힐스</option>
+                </select>
+            </div>
+            <select class="product-select input-field !py-1.5 !text-sm w-full" onchange="triggerFeedCalc()"></select>
+            <button type="button" class="absolute top-3 right-2 text-gray-300 hover:text-red-500 font-bold px-2 transition-colors" onclick="this.parentElement.remove(); triggerFeedCalc();">✕</button>
+        `;
+        container.appendChild(row);
+        updateRowOptions(row);
+        triggerFeedCalc();
+    }
+
+    // 자발 섭취 사료 행 추가 (강급)
+    function addEatenRow() {
+        const container = document.getElementById('eatenRowsContainer');
+        const row = document.createElement('div');
+        row.className = "eaten-diet-row flex flex-col gap-2 p-3 bg-white border border-green-100 rounded-lg relative shadow-sm";
+        row.innerHTML = `
+            <div class="flex gap-2 pr-6">
+                <select class="type-select input-field !py-1.5 !text-sm flex-1" onchange="updateRowOptions(this.parentElement.parentElement); triggerFeedCalc();">
+                    <option value="dry">건식 (Dry)</option>
+                    <option value="wet">습식 (Wet)</option>
+                </select>
+                <select class="brand-select input-field !py-1.5 !text-sm flex-1" onchange="updateRowOptions(this.parentElement.parentElement); triggerFeedCalc();">
+                    <option value="royal">로얄캐닌</option>
+                    <option value="hills">힐스</option>
+                </select>
+            </div>
+            <div class="flex gap-2 items-center">
+                <select class="product-select input-field !py-1.5 !text-sm flex-[2]" onchange="triggerFeedCalc()"></select>
+                <input type="number" class="eaten-grams input-field !py-1.5 !text-sm flex-[1] font-bold text-green-700" placeholder="먹은 양(g)" step="0.1" oninput="triggerFeedCalc()">
+            </div>
+            <button type="button" class="absolute top-3 right-2 text-gray-300 hover:text-red-500 font-bold px-2 transition-colors" onclick="this.parentElement.remove(); triggerFeedCalc();">✕</button>
+        `;
+        container.appendChild(row);
+        updateRowOptions(row);
+        triggerFeedCalc();
+    }
+
+    // 강급 사료 초기화
+    function initForceDiet() {
+        const container = document.getElementById('forceDietContainer');
+        const row = document.createElement('div');
+        row.className = "force-diet-row flex flex-col gap-2";
+        row.innerHTML = `
+            <div class="flex gap-2">
+                <select class="type-select input-field !py-1.5 !text-sm flex-1" onchange="updateRowOptions(this.parentElement.parentElement); triggerFeedCalc();">
+                    <option value="dry">건식 (Dry)</option>
+                    <option value="wet">습식 (Wet)</option>
+                </select>
+                <select class="brand-select input-field !py-1.5 !text-sm flex-1" onchange="updateRowOptions(this.parentElement.parentElement); triggerFeedCalc();">
+                    <option value="royal">로얄캐닌</option>
+                    <option value="hills">힐스</option>
+                </select>
+            </div>
+            <select class="product-select input-field !py-1.5 !text-sm w-full font-bold text-orange-700" onchange="triggerFeedCalc()"></select>
+        `;
+        container.appendChild(row);
+        updateRowOptions(row);
+    }
+
+    // 개별 사료 행의 옵션 업데이트
+    function updateRowOptions(row) {
+        const typeStr = row.querySelector('.type-select').value;
+        const brandSelect = row.querySelector('.brand-select');
+        let brandStr = brandSelect.value;
+        
+        // 개/고양이, 건식/습식 모두 브랜드 선택창 항상 표시
+        brandSelect.style.display = '';
+        
+        const prodSelect = row.querySelector('.product-select');
+        prodSelect.innerHTML = '';
+        const items = feedData[currentFeedSpecies]?.[typeStr]?.[brandStr] || [];
+        
+        if(items.length === 0) {
+            prodSelect.innerHTML = '<option value="">선택할 제품이 없습니다</option>';
+        } else {
+            items.forEach((item, idx) => {
+                prodSelect.innerHTML += `<option value="${idx}">${item.name} (${item.kcal} kcal/kg)</option>`;
+            });
+        }
+    }
+
+    function calcFeed() {
+        const w = parseFloat(document.getElementById('feedWeight').value);
+        const factor = parseFloat(document.getElementById('activityFactor').value);
+        const count = parseInt(document.getElementById('feedCount').value);
+        const resBox = document.getElementById('feedResult');
+        const rows = document.querySelectorAll('.feed-diet-row');
+        
+        if(!w || !factor || rows.length === 0) { 
+            resBox.classList.add('hidden'); 
+            return; 
+        }
+        
+        const rer = 70 * Math.pow(w, 0.75);
+        const der = rer * factor;
+        
+        let selectedProducts = [];
+        rows.forEach(row => {
+            const typeStr = row.querySelector('.type-select').value;
+            const brandStr = row.querySelector('.brand-select').value;
+            const prodIdx = row.querySelector('.product-select').value;
+            
+            if (prodIdx !== "") {
+                const item = feedData[currentFeedSpecies][typeStr][brandStr][prodIdx];
+                if (item && item.kcal > 0) {
+                    selectedProducts.push(item);
+                }
+            }
+        });
+        
+        if (selectedProducts.length === 0) { 
+            resBox.classList.add('hidden'); 
+            return; 
+        }
+        
+        const derPerProduct = der / selectedProducts.length;
+        
+        let resultHtml = `
+            <div class="text-[13px] text-gray-500 font-bold mb-3 border-b border-gray-100 pb-2">하루 총 필요 칼로리: <span class="font-extrabold text-pink-600 text-lg ml-1">${der.toFixed(1)}</span> kcal</div>
+            <div class="flex flex-col gap-2">
+        `;
+        
+        selectedProducts.forEach((item, index) => {
+            const totalGrams = derPerProduct / (item.kcal / 1000);
+            const mealGrams = totalGrams / count;
+            const mealKcal = derPerProduct / count;
+            
+            resultHtml += `
+                <div class="bg-gray-50 p-3 rounded-lg text-left relative overflow-hidden border border-gray-200">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-pink-400"></div>
+                    <div class="font-bold text-gray-800 text-sm mb-1 ml-2 tracking-tight">${index+1}. ${item.name}</div>
+                    <div class="ml-2 flex justify-between items-end">
+                        <div>
+                            <div class="text-[11px] text-gray-500 font-bold">1회 급여량 (하루 ${count}회 기준)</div>
+                            <div class="flex items-baseline gap-1.5 mt-1">
+                                <span class="text-2xl font-extrabold text-pink-600 leading-none">${mealGrams.toFixed(1)} <span class="text-sm font-medium text-pink-500">g</span></span>
+                                <span class="text-xs font-semibold text-gray-500">(${mealKcal.toFixed(1)} kcal)</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[11px] text-gray-400 font-medium">분할 칼로리: ${derPerProduct.toFixed(1)} kcal</div>
+                            <div class="text-xs font-bold text-gray-600 mt-1">하루 총 ${totalGrams.toFixed(1)} g</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        resultHtml += `</div>`;
+        document.getElementById('feedResultContent').innerHTML = resultHtml;
+        resBox.classList.remove('hidden');
+    }
+
+    function calcForceFeed() {
+        const w = parseFloat(document.getElementById('feedWeight').value);
+        const factor = parseFloat(document.getElementById('activityFactor').value);
+        const count = parseInt(document.getElementById('feedCount').value);
+        const resBox = document.getElementById('forceFeedResult');
+        
+        if(!w || !factor) { resBox.classList.add('hidden'); return; }
+        
+        const rer = 70 * Math.pow(w, 0.75);
+        const der = rer * factor; // 하루 총 필요 칼로리
+        const mealDer = der / count; // 1회(한 끼) 필요 칼로리
+        
+        let eatenKcal = 0;
+        document.querySelectorAll('.eaten-diet-row').forEach(row => {
+            const typeStr = row.querySelector('.type-select').value;
+            const brandStr = row.querySelector('.brand-select').value;
+            const prodIdx = row.querySelector('.product-select').value;
+            const grams = parseFloat(row.querySelector('.eaten-grams').value) || 0;
+            
+            if (prodIdx !== "" && grams > 0) {
+                const item = feedData[currentFeedSpecies][typeStr][brandStr][prodIdx];
+                if (item && item.kcal > 0) {
+                    eatenKcal += (item.kcal / 1000) * grams;
+                }
+            }
+        });
+        
+        // 1회 필요 칼로리에서 이번 끼니에 섭취한 칼로리를 뺌
+        let remainingKcalPerMeal = mealDer - eatenKcal;
+        if(remainingKcalPerMeal < 0) remainingKcalPerMeal = 0;
+
+        const forceRow = document.querySelector('.force-diet-row');
+        if(!forceRow) return;
+        const fTypeStr = forceRow.querySelector('.type-select').value;
+        const fBrandStr = forceRow.querySelector('.brand-select').value;
+        const fProdIdx = forceRow.querySelector('.product-select').value;
+        
+        if (fProdIdx === "") { resBox.classList.add('hidden'); return; }
+        
+        const forceItem = feedData[currentFeedSpecies][fTypeStr][fBrandStr][fProdIdx];
+        if (!forceItem || forceItem.kcal <= 0) { resBox.classList.add('hidden'); return; }
+
+        // 이번 끼니(1회)에 추가로 강급해야 할 그램(g) 수 계산
+        const requiredGramsPerMeal = remainingKcalPerMeal / (forceItem.kcal / 1000);
+
+        let resultHtml = `
+            <div class="text-[13px] text-gray-500 font-bold mb-3 border-b border-gray-100 pb-2 flex justify-between items-center">
+                <span>1회 필요: <span class="text-gray-800 ml-1">${mealDer.toFixed(1)}</span> kcal <span class="text-[10px] font-normal text-gray-400 ml-1">(총 ${der.toFixed(1)} ÷ ${count}회)</span></span>
+                <span class="text-green-600 bg-green-50 px-2 py-0.5 rounded">- 1회 섭취: ${eatenKcal.toFixed(1)} kcal</span>
+            </div>
+            <div class="mb-3 text-left">
+                <div class="text-sm font-bold text-gray-700">1회 남은 칼로리: <span class="text-orange-600 text-xl font-extrabold ml-1">${remainingKcalPerMeal.toFixed(1)}</span> kcal</div>
+            </div>
+        `;
+
+        if (remainingKcalPerMeal === 0) {
+             resultHtml += `<div class="p-3 bg-green-50 text-green-700 font-bold rounded-lg border border-green-200">✅ 이번 끼니 필요 칼로리를 모두 섭취했습니다!</div>`;
+        } else {
+             resultHtml += `
+                <div class="bg-orange-50 p-3 rounded-lg text-left relative border border-orange-200">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-400"></div>
+                    <div class="font-bold text-gray-800 text-sm mb-1 ml-2 tracking-tight">이번 끼니 강급: ${forceItem.name}</div>
+                    <div class="ml-2 flex justify-between items-end">
+                        <div>
+                            <div class="text-[11px] text-gray-500 font-bold">1회 추가 강급량</div>
+                            <div class="flex items-baseline gap-1.5 mt-1">
+                                <span class="text-2xl font-extrabold text-orange-600 leading-none">${requiredGramsPerMeal.toFixed(1)} <span class="text-sm font-medium text-orange-500">g</span></span>
+                                <span class="text-xs font-semibold text-gray-500">(${remainingKcalPerMeal.toFixed(1)} kcal)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+             `;
+        }
+
+        resBox.innerHTML = resultHtml;
+        resBox.classList.remove('hidden');
+    }
+
+    function openFactorModal() {
+        document.getElementById('factorModal').style.display = 'flex';
+        document.getElementById('modalDog').style.display = currentFeedSpecies === 'dog' ? 'block' : 'none';
+        document.getElementById('modalCat').style.display = currentFeedSpecies === 'cat' ? 'block' : 'none';
+    }
+    function closeFactorModal() { document.getElementById('factorModal').style.display = 'none'; }
+    window.onclick = function(e) { 
+        let modal = document.getElementById('factorModal');
+        if (e.target == modal) modal.style.display = "none";
+    }
+
+    // 초기 시작 시 기본 사료 입력칸 1개 띄워주기
+    addFeedRow();
+
+    // ==========================================
+    // 5. Na 교정 계산기 로직
+    // ==========================================
+    function addNaFluidRow() {
+        const container = document.getElementById('naFluidRowsContainer');
+        const row = document.createElement('div');
+        row.className = "flex gap-2 items-center na-fluid-row mt-1";
+        row.innerHTML = `
+            <select class="input-field !py-2 !text-sm flex-1 na-fluid-select" onchange="calcSodium()">
+                <option value="154">0.9% N/S (Na: 154)</option>
+                <option value="131">하트만 (Na: 131)</option>
+                <option value="140">플라주오피 (Na: 140)</option>
+                <option value="77">하프샐라인 (Na: 77)</option>
+                <option value="0">5% DW (Na: 0)</option>
+                <option value="513">3% NaCl (Na: 513)</option>
+            </select>
+            <input type="number" class="input-field !py-2 !text-sm w-24 na-fluid-rate" placeholder="ml/hr" step="0.1" oninput="calcSodium()">
+            <button type="button" class="text-gray-400 hover:text-red-500 font-bold px-2" onclick="this.parentElement.remove(); calcSodium();">✕</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function calcSodium() {
+        const w = parseFloat(document.getElementById('naWeight').value);
+        const naCurrent = parseFloat(document.getElementById('naCurrent').value);
+        const resBox = document.getElementById('naResult');
+        const resText = document.getElementById('naChangeText');
+        const warning = document.getElementById('naWarning');
+        const mixedInfo = document.getElementById('naMixedInfo');
+
+        const rows = document.querySelectorAll('.na-fluid-row');
+        let totalRate = 0;
+        let totalNaAmount = 0;
+
+        rows.forEach(row => {
+            const fluidNa = parseFloat(row.querySelector('.na-fluid-select').value) || 0;
+            const rate = parseFloat(row.querySelector('.na-fluid-rate').value) || 0;
+            if (rate > 0) {
+                totalRate += rate;
+                totalNaAmount += (fluidNa * (rate / 1000));
+            }
+        });
+
+        if (!w || !naCurrent || totalRate <= 0) {
+            resBox.classList.add('hidden');
+            if(mixedInfo) mixedInfo.classList.add('hidden');
+            return;
+        }
+
+        const v = totalRate / 1000;
+        const infusateNa = totalNaAmount / v;
+        const tbw = w * 0.6;
+        
+        // 새로운 공식 적용: Delta Na = (V * (infusateNa - naPatient)) / (TBW + V)
+        const changePerHour = (v * (infusateNa - naCurrent)) / (tbw + v);
+        
+        let sign = changePerHour > 0 ? "+" : "";
+        resText.innerText = `${sign}${changePerHour.toFixed(3)}`;
+        
+        let mixedFluidsCount = 0;
+        rows.forEach(r => { if(parseFloat(r.querySelector('.na-fluid-rate').value) > 0) mixedFluidsCount++; });
+
+        if (mixedInfo) {
+            if (mixedFluidsCount > 1) {
+                mixedInfo.innerHTML = `💧 <strong>혼합 수액 정보</strong>: 총 속도 <span class="text-indigo-900">${totalRate.toFixed(1)}</span> ml/hr &nbsp;|&nbsp; 평균 Na 농도 <span class="text-indigo-900">${infusateNa.toFixed(1)}</span> mEq/L`;
+                mixedInfo.classList.remove('hidden');
+            } else {
+                mixedInfo.classList.add('hidden');
+            }
+        }
+        
+        if (Math.abs(changePerHour) > 0.5) {
+            warning.innerHTML = `⚠️ 급격한 교정 위험! <br>시간당 변화량이 0.5 mEq/L를 초과합니다. (권장: 0.5 미만)`;
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+        resBox.classList.remove('hidden');
+    }
+
+    // ==========================================
+    // 6. 수혈 및 혈액제제 계산기 로직
+    // ==========================================
+    let currentTfType = 'blood';
+    let currentTfBloodSpecies = 'dog';
+
+    function setTfType(type, e) {
+        currentTfType = type;
+        document.querySelectorAll('#tfTypeGroup .btn-toggle').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+
+        document.getElementById('tfBloodForm').classList.add('hidden');
+        document.getElementById('tfAlbuminForm').classList.add('hidden');
+        document.getElementById('tfHivigForm').classList.add('hidden');
+
+        if (type === 'blood') document.getElementById('tfBloodForm').classList.remove('hidden');
+        else if (type === 'albumin') document.getElementById('tfAlbuminForm').classList.remove('hidden');
+        else if (type === 'hivig') document.getElementById('tfHivigForm').classList.remove('hidden');
+
+        calcTransfusion();
+    }
+
+    function setTfBloodSpecies(sp, e) {
+        currentTfBloodSpecies = sp;
+        document.querySelectorAll('#tfBloodSpeciesGroup .btn-toggle').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        
+        // 종 변경 시 Donor PCV 기본값 변경 (개: 45, 고양이: 30)
+        document.getElementById('tfDonorPcv').value = (sp === 'dog') ? 45 : 30;
+        calcTransfusion();
+    }
+
+    function calcTransfusion() {
+        const resBox = document.getElementById('tfResultBox');
+        const resText = document.getElementById('tfResultText');
+        const resSub = document.getElementById('tfResultSub');
+
+        if (currentTfType === 'blood') {
+            const w = parseFloat(document.getElementById('tfBloodWeight').value);
+            const donorPcv = parseFloat(document.getElementById('tfDonorPcv').value);
+            const currPcv = parseFloat(document.getElementById('tfCurrPcv').value);
+            const targetPcv = parseFloat(document.getElementById('tfTargetPcv').value);
+
+            if (!w || !donorPcv || isNaN(currPcv) || !targetPcv || targetPcv <= currPcv) {
+                resBox.classList.add('hidden');
+                return;
+            }
+
+            // 개: 90 ml/kg, 고양이: 60 ml/kg
+            const factor = (currentTfBloodSpecies === 'dog') ? 90 : 60;
+            const reqVol = w * factor * ((targetPcv - currPcv) / donorPcv);
+
+            resText.innerHTML = `필요한 전혈량: <span class="text-3xl font-extrabold text-red-600 mx-1">${reqVol.toFixed(1)}</span> ml`;
+            resSub.innerHTML = `💡 계산식: 체중(${w}kg) × ${factor} × [(목표PCV ${targetPcv} - 현재PCV ${currPcv}) ÷ Donor PCV ${donorPcv}]`;
+            resBox.classList.remove('hidden');
+
+        } else if (currentTfType === 'albumin') {
+            const w = parseFloat(document.getElementById('tfAlbWeight').value);
+            const currAlb = parseFloat(document.getElementById('tfCurrAlb').value);
+            const targetAlb = parseFloat(document.getElementById('tfTargetAlb').value);
+            const conc = parseFloat(document.getElementById('tfAlbConc').value); // 5 or 20
+
+            if (!w || isNaN(currAlb) || !targetAlb || targetAlb <= currAlb) {
+                resBox.classList.add('hidden');
+                return;
+            }
+
+            // 알부민 요구량(g) = 체중(kg) * (목표 알부민 - 현재 알부민) * 0.3 * 10
+            const deficitGrams = w * (targetAlb - currAlb) * 0.3 * 10;
+            // 5% = 0.05 g/ml, 20% = 0.2 g/ml
+            const gramPerMl = conc / 100;
+            const reqVol = deficitGrams / gramPerMl;
+
+            resText.innerHTML = `알부민 <span class="text-amber-700 font-extrabold">${conc}%</span> 제제 <span class="text-3xl font-extrabold text-red-600 mx-1">${reqVol.toFixed(1)}</span> ml를<br><span class="text-base text-indigo-700">6시간에서 24시간까지 투여</span>`;
+            resSub.innerHTML = `💡 총 필요 알부민: ${deficitGrams.toFixed(2)}g [계산식: 체중 × (목표 - 현재) × 0.3 × 10]`;
+            resBox.classList.remove('hidden');
+
+        } else if (currentTfType === 'hivig') {
+            const w = parseFloat(document.getElementById('tfHivigWeight').value);
+            const dose = parseFloat(document.getElementById('tfHivigDose').value);
+
+            if (!w || !dose) {
+                resBox.classList.add('hidden');
+                return;
+            }
+
+            // 5% 제제 = 0.05 g/ml = 50 mg/ml
+            const totalMg = w * dose;
+            const volByMg = totalMg / 50; // 50mg/ml 기준 (순수 mg/kg 계산 시)
+            const volByGram = (w * dose) / 0.05; // 0.5~1.5 g/kg로 계산 시 (체중 * 용량g / 0.05g/ml)
+
+            resText.innerHTML = `5%(0.05g/ml) 제제 <span class="text-3xl font-extrabold text-purple-700 mx-1">${volByGram.toFixed(1)}</span> ml를<br><span class="text-base text-indigo-700">6시간에서 24시간까지 투여</span>`;
+            resSub.innerHTML = `💡 체중(${w}kg) × 용량(${dose}) ÷ 0.05g/ml 기준 <span class="text-gray-400">(순수 mg환산 시: ${volByMg.toFixed(2)}ml)</span>`;
+            resBox.classList.remove('hidden');
+        }
+    }
+</script>
+</body>
+</html>

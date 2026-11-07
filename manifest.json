@@ -1,0 +1,17 @@
+{
+  "name": "종합 수의 임상 계산기 v1.1",
+  "short_name": "수의계산기 v1.1",
+  "description": "CRI·주사제·발작약물·사료량·Na 교정·수혈 계산기",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f4f6",
+  "theme_color": "#7c3aed",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
