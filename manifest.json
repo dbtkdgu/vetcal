@@ -1,6 +1,6 @@
 {
-  "name": "종합 수의 임상 계산기 v1.1",
-  "short_name": "수의계산기 v1.1",
+  "name": "종합 수의 임상 계산기 v1.2",
+  "short_name": "수의계산기 v1.2",
   "description": "CRI·주사제·발작약물·사료량·Na 교정·수혈 계산기",
   "lang": "ko",
   "start_url": "./index.html",
