@@ -1,6 +1,6 @@
 // 수의계산기 서비스 워커 — 오프라인 사용 지원
 // index.html을 수정해서 다시 올릴 때는 아래 버전 숫자를 올려주세요 (v1 → v2).
-const CACHE = 'vetcalc-v1';
+const CACHE = 'vetcalc-v1.2';
 const APP_SHELL = [
   './',
   './index.html',
