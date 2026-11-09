@@ -1,0 +1,537 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>항암제 커버리지 맵</title>
+<link rel="manifest" href="./manifest.json"><meta name="theme-color" content="#7c3aed"><link rel="icon" type="image/png" href="./icons/icon-192.png"><link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="항암제맵">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F4F6F5; --panel:#FFFFFF; --ink:#16201D; --muted:#5B6863; --line:#D8DFDC; --soft:#E9EEEC;
+  --violet:#5B3EA6; --violet-bg:#EFEAFB;
+  --g0:#C8463D; --g0-bg:#FBE6E3; --g1:#B07A12; --g1-bg:#FBF0D6; --g2:#3E8A5A; --g2-bg:#E2F2E7; --g3:#1E6B3F; --g3-bg:#C8E8D2;
+  --crit:#B3261E; --crit-bg:#FCE8E6; --warn:#8A5A00; --warn-bg:#FFF3D6; --info:#2D5B8F; --info-bg:#E5EEF8;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#111816; --panel:#18211E; --ink:#E5ECE9; --muted:#9AA8A2; --line:#2C3934; --soft:#212C28;
+  --violet:#B7A3F0; --violet-bg:#2A2342;
+  --g0:#F08A80; --g0-bg:#3C201D; --g1:#E8BC5C; --g1-bg:#382C12; --g2:#7FCB98; --g2-bg:#1C3326; --g3:#A6E8BB; --g3-bg:#1F4A31;
+  --crit:#F2958C; --crit-bg:#3B1E1B; --warn:#F0C66A; --warn-bg:#352A10; --info:#9CC0EC; --info-bg:#1C2B3D; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding:20px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.nav a{font-size:.8rem;text-decoration:none;color:var(--violet);border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 11px}.nav a:hover{border-color:var(--violet)}
+header h1{font-size:1.5rem;font-weight:600;margin:0}
+header p{margin:4px 0 0;color:var(--muted);font-size:.9rem;max-width:72ch}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel h2{font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:820px){.grid2{grid-template-columns:1fr}}
+select,button,input{font-family:inherit;font-size:.92rem;color:var(--ink)}
+select{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.num-in{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:100px;font-family:var(--f-mono)}
+.num-in.sm{width:72px;padding:3px 6px;font-size:.84rem}
+.field{display:flex;flex-direction:column;gap:3px;font-size:.78rem;color:var(--muted)}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 11px;cursor:pointer;font-size:.86rem;line-height:1.3}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.chip.na{opacity:.55;text-decoration:line-through}
+.chip:focus-visible,select:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.btn{border:1px solid var(--ink);background:transparent;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.86rem}
+.btn.primary{background:var(--violet);border-color:var(--violet);color:#fff}
+.check{display:flex;gap:6px;align-items:center;font-size:.88rem;border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer;background:var(--panel)}
+.check input{accent-color:var(--violet)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:6px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.drug-groups{display:flex;flex-direction:column;gap:8px}
+.dg{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}
+.dg-l{font-size:.75rem;color:var(--muted);width:96px;flex:none}
+@media (max-width:520px){.dg-l{width:100%}}
+.tier{font-family:var(--f-mono);font-size:.66rem;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:1px}
+.r3{background:var(--g3-bg);color:var(--g3)} .r2{background:var(--info-bg);color:var(--info)} .r1{background:var(--g1-bg);color:var(--g1)} .r0{background:var(--soft);color:var(--muted)}
+.chip[aria-pressed="true"] .tier{background:transparent;color:inherit;border:1px solid currentColor}
+.site-info{display:flex;flex-direction:column;gap:8px;font-size:.9rem}
+.site-info .k{font-size:.75rem;color:var(--muted);letter-spacing:.04em}
+.pill{display:inline-flex;gap:4px;align-items:center;font-size:.8rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+.summary{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.score{font-family:var(--f-mono);font-size:2rem;font-weight:500;line-height:1}
+.score small{font-size:.85rem;color:var(--muted);font-family:var(--f-body)}
+.alerts{display:flex;flex-direction:column;gap:6px}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:8px;font-size:.88rem;border-left:4px solid}
+.alert b{font-weight:600}
+.alert.crit{background:var(--crit-bg);border-color:var(--crit)} .alert.crit .tag{color:var(--crit)}
+.alert.warn{background:var(--warn-bg);border-color:var(--warn)} .alert.warn .tag{color:var(--warn)}
+.alert.info{background:var(--info-bg);border-color:var(--info)} .alert.info .tag{color:var(--info)}
+.alert.ok{background:var(--g2-bg);border-color:var(--g2)} .alert.ok .tag{color:var(--g3)}
+.tag{font-family:var(--f-mono);font-size:.72rem;font-weight:500;flex:none;padding-top:2px;width:52px}
+.tablebox{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.86rem;min-width:520px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+th{font-weight:500;font-size:.76rem;color:var(--muted);background:var(--soft);position:sticky;top:0}
+td.org,th.org{text-align:left;white-space:normal;min-width:150px}
+td.org .sub{display:block;font-size:.72rem;color:var(--muted)}
+td.l,th.l{text-align:left;white-space:normal}
+tr.cur td{background:var(--violet-bg)}
+.cell{display:inline-flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:5px;font-family:var(--f-mono);font-weight:500}
+.c0{background:var(--soft);color:var(--muted)} .c1{background:var(--g1-bg);color:var(--g1)} .c2{background:var(--g2-bg);color:var(--g2)} .c3{background:var(--g3-bg);color:var(--g3)}
+.t0{color:var(--muted)} .t1{background:var(--g1-bg);color:var(--g1)} .t2{background:var(--warn-bg);color:var(--warn)} .t3{background:var(--crit-bg);color:var(--crit)}
+.tx{font-size:.74rem;padding:1px 6px;border-radius:4px}
+td.comb{background:var(--soft)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.78rem;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;gap:5px;align-items:center}
+.mono{font-family:var(--f-mono)}
+.big{font-family:var(--f-mono);font-weight:600;color:var(--violet)}
+.muted{color:var(--muted);font-size:.78rem}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:.86rem;min-width:0}
+.card h3{margin:0;font-size:1rem;font-weight:600}
+.card .en{font-size:.76rem;color:var(--muted);font-family:var(--f-mono)}
+.card dl{display:grid;grid-template-columns:72px 1fr;gap:3px 8px;margin:0}
+.card dt{color:var(--muted);font-size:.76rem}
+.card dd{margin:0;min-width:0}
+.card ul{margin:0;padding-left:18px}
+.foot{font-size:.8rem;color:var(--muted)}
+.foot ul{margin:0;padding-left:18px}
+.empty{color:var(--muted);font-size:.9rem;padding:8px 0}
+.bsa{font-family:var(--f-mono);font-size:1.1rem}
+</style></head><body>
+<div class="wrap">
+  <header>
+    <nav class="nav" aria-label="다른 도구"><a href="./index.html">수의 임상 계산기 (모바일)</a><a href="./desktop.html">수의 임상 계산기 (데스크톱)</a><a href="./anti.html">항생제 커버리지 맵</a></nav>
+    <h1>항암제 커버리지 맵</h1>
+    <p>종양과 환자 조건을 고르고 항암제를 선택하면, 종양별 반응 근거, 독성 중복, 종·장기·MDR1별 금기, 투여 전 혈구 기준, 체표면적(BSA) 기반 용량을 함께 보여줍니다. 최종 처방은 종양내과 프로토콜과 대조하십시오.</p>
+  </header>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="h-tumor">
+      <h2 id="h-tumor">1. 종양</h2>
+      <select id="tumor" aria-label="종양"></select>
+      <div class="site-info" id="tumorInfo"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-pt">
+      <h2 id="h-pt">2. 환자 조건</h2>
+      <div class="row">
+        <div class="seg" role="group" aria-label="종">
+          <button id="sp-dog" aria-pressed="true">개</button>
+          <button id="sp-cat" aria-pressed="false">고양이</button>
+        </div>
+        <label class="field">체중 (kg)<input class="num-in" type="number" id="wt" step="0.1" min="0" placeholder="kg"></label>
+        <div class="field">BSA<span class="bsa" id="bsaOut">— m²</span></div>
+      </div>
+      <div class="row">
+        <label class="field">MDR1(ABCB1) 유전형
+          <select id="mdr" style="width:auto">
+            <option value="nn">정상 (N/N)</option>
+            <option value="unk">모름</option>
+            <option value="mn">이형 (M/N)</option>
+            <option value="mm">동형 (M/M)</option>
+          </select></label>
+        <label class="field">호중구 (/µL)<input class="num-in" type="number" id="neut" step="100" min="0" placeholder="예: 3500"></label>
+        <label class="field">혈소판 (/µL)<input class="num-in" type="number" id="plt" step="1000" min="0" placeholder="예: 200000"></label>
+        <label class="field">누적 독소루비신 (mg/m²)<input class="num-in" type="number" id="cumDox" step="5" min="0" placeholder="0"></label>
+      </div>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="m-renal"> 신기능 저하</label>
+        <label class="check"><input type="checkbox" id="m-hep"> 간기능 저하·고빌리루빈</label>
+        <label class="check"><input type="checkbox" id="m-heart"> 심장질환·수축력 저하</label>
+        <label class="check"><input type="checkbox" id="m-lung"> 만성 폐질환·테리어</label>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-drug">
+    <div class="row" style="justify-content:space-between">
+      <h2 id="h-drug">3. 항암제 선택</h2>
+      <div class="row">
+        <button class="btn primary" id="applyRec">표준 프로토콜 적용</button>
+        <button class="btn" id="clearDrugs">선택 해제</button>
+      </div>
+    </div>
+    <div class="drug-groups" id="drugGroups"></div>
+    <div class="legend">
+      <span>이 종양에서:</span>
+      <span><span class="tier r3">표준</span> 1차·핵심</span>
+      <span><span class="tier r2">대체</span> 구제·병용 근거</span>
+      <span><span class="tier r1">약함</span> 반응 제한적</span>
+      <span><span class="tier r0">없음</span> 근거 없음</span>
+      <span><span class="chip na" style="cursor:default;padding:1px 8px">취소선</span> 이 종에 금기·자료 없음</span>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-res">
+    <h2 id="h-res">4. 판정</h2>
+    <div class="summary" id="summary"></div>
+    <div class="alerts" id="alerts"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-dose">
+    <h2 id="h-dose">5. 용량 계산 (BSA·체중)</h2>
+    <div class="tablebox"><table id="doseTable"></table></div>
+    <p class="muted" style="margin:0">BSA(m²) = K × 체중(kg)<sup>2/3</sup> ÷ 100 (개 K=10.1, 고양이 K=10.0). 농도 칸은 병원 제제에 맞게 수정할 수 있습니다. 경구약은 정제·캡슐 크기에 맞춘 반올림이나 조제가 필요합니다. MDR1 조정 칸은 Plumb's 권고(이형 25%, 동형 50% 감량으로 시작 후 내약성에 따라 증량)를 적용한 값입니다.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-mat">
+    <h2 id="h-mat">6. 종양별 반응 등급</h2>
+    <div class="legend">
+      <span><span class="cell c0">0</span> 근거 없음·무효</span>
+      <span><span class="cell c1">1</span> 반응 제한적</span>
+      <span><span class="cell c2">2</span> 구제·병용 근거</span>
+      <span><span class="cell c3">3</span> 표준·1차</span>
+      <span>보라색 줄 = 선택한 종양</span>
+    </div>
+    <div class="tablebox"><table id="matrix"></table></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-tox">
+    <h2 id="h-tox">7. 독성 프로파일</h2>
+    <div class="tablebox"><table id="toxTable"></table></div>
+    <div class="legend">
+      <span><span class="tx t1">경미</span></span><span><span class="tx t2">중등</span></span><span><span class="tx t3">주요</span></span>
+      <span>노란 머리글 = 환자 조건상 주의할 장기</span>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-cards">
+    <h2 id="h-cards">8. 선택 약물 정보</h2>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="panel foot" aria-labelledby="h-src">
+    <h2 id="h-src">근거와 한계</h2>
+    <ul>
+      <li>용량·독성 전반: Vail, Thamm, Liptak. Withrow &amp; MacEwen's Small Animal Clinical Oncology 6th ed (2020); Plumb's Veterinary Drug Handbook.</li>
+      <li>독성 등급: VCOG-CTCAE v2 (LeBlanc 등, Vet Comp Oncol 2021) — 호중구 1,000–1,499 = 2등급, 500–999 = 3등급, &lt;500 = 4등급.</li>
+      <li>소형견 독소루비신: 30 mg/m² 투여 시 10 kg 이하에서 골수억제·위장 독성 증가, 1 mg/kg에서는 없음 (Arrington 등, AJVR 1994).</li>
+      <li>독소루비신 심독성: 누적 240 mg/m² 미만에서 드묾, 대부분 기관은 180 mg/m²를 넘기지 않음 (Hallman 등, JVIM 2019).</li>
+      <li>T세포 림프종 LOPP: 31마리 반응률 97%, 중앙 생존 323일 (Brown 등, Vet Comp Oncol 2018 — 후향, 과거 대조군).</li>
+      <li>골육종 토세라닙 유지요법 무효 (London 등, PLoS One 2015). 카보플라틴 6회가 카보·독소 교대보다 DFI 김 (Skorupski 등, Vet Comp Oncol 2016).</li>
+      <li>비장 혈관육종 독소 후 토세라닙 무효 (Gardner 등, BMC Vet Res 2015).</li>
+      <li>요로상피암 빈블라스틴+피록시캄 관해 58.3% vs 단독 22.2% (Knapp 등, Bladder Cancer 2016).</li>
+      <li>빈블라스틴 MTD 3.5 mg/m², 호중구 최저점 7일 (Bailey 등, JVIM 2008).</li>
+      <li>고양이 카보플라틴 240 mg/m² q3–4w (Kisseberth 등, JVIM 2008). 고양이 클로람부실 20 mg/m² q2w (Stein 등, JAAHA 2010).</li>
+      <li>로무스틴 간독성 — Denamarin 병용 시 ALT 상승 감소 (Skorupski 등, JVIM 2011).</li>
+      <li>MDR1: 빈크리스틴 혈액독성 증가 (Mealey 등, JVIM 2008). 감량 권고는 Plumb's Therapeutics Brief.</li>
+      <li>라박포사딘: Tanovea 라벨 (1 mg/kg q3w ×5, 웨스트하이랜드 화이트테리어 금기).</li>
+    </ul>
+    <p style="margin:6px 0 0">반응 등급과 표준 프로토콜은 위 자료와 교과서 권고를 바탕으로 정리한 기본값이며, 개별 연구의 대상·병기에 따라 달라집니다. 생존 기간은 대부분 후향 연구 수치입니다. 투여 기준(호중구·혈소판)은 기관마다 다르니 병원 기준을 따르십시오. 세포독성 약물은 이중 장갑·가운·폐쇄형 이송장치(CSTD, closed-system transfer device)로 다루고, 투여 후 48–72시간은 배설물 취급에 주의하십시오.</p>
+  </section>
+</div>
+
+<script>
+// ---------- 독성 축 ----------
+const TOX=[['bm','골수'],['gi','위장관'],['card','심장'],['ren','신장'],['hep','간'],['blad','방광'],['neuro','신경'],['hyp','과민반응'],['ves','혈관외 유출']];
+const TL=['–','경미','중등','주요'];
+
+// ---------- 약물 ----------
+// dose: {u:'m2'|'kg', lo, hi, s:일정}; null = 자료 없음, contra = 금기
+const D=[
+ {k:'doxo',n:'독소루비신',en:'Doxorubicin',cls:'안트라사이클린',grp:'안트라사이클린',form:'inj',conc:2,amt:'mg',
+  dog:{u:'m2',lo:30,hi:30,s:'IV 20–30분 이상 희석 주입, q2–3w'},smallDog:{maxKg:15,u:'kg',lo:1,hi:1},
+  cat:{u:'kg',lo:1,hi:1,s:'IV q3w'},
+  tox:[3,2,3,1,1,0,0,2,3],catTox:{ren:2},nadir:'7–10일',mdr:2,
+  ren:'고양이: 누적 신독성 — 신기능 저하 시 피함',hep:'빌리루빈 상승 시 감량 (예: 1.5–3 mg/dL 50%)',
+  cau:['누적 심독성: 180 mg/m² 이상 신중, 240 mg/m² 이상 위험 — 투여 전 심초음파','강한 발포제 — 혈관외 유출 시 조직괴사 (덱스라족산)','투여 전 디펜히드라민 1 mg/kg IM (과민반응 예방)','10 kg 이하 소형견 30 mg/m²는 과다노출 → 1 mg/kg'],
+  catCau:['누적 신독성 — 매 투여 전 Cre·요비중']},
+ {k:'vcr',n:'빈크리스틴',en:'Vincristine',cls:'빈카알칼로이드',grp:'빈카알칼로이드',form:'inj',conc:1,amt:'mg',
+  dog:{u:'m2',lo:0.5,hi:0.7,s:'IV bolus, CHOP 일정상 주 1회'},cat:{u:'m2',lo:0.5,hi:0.7,s:'IV bolus, COP/CHOP 일정'},
+  tox:[1,1,0,0,1,0,2,0,3],nadir:'약 7일 (경미)',mdr:2,ren:'',hep:'빌리루빈 상승 시 감량',
+  cau:['발포제 — 반드시 깨끗한 단일 천자 정맥','말초 신경병·장폐색(변비) — 고양이에서 더 흔함','MDR1 이형·동형에서 혈액독성 증가']},
+ {k:'vbl',n:'빈블라스틴',en:'Vinblastine',cls:'빈카알칼로이드',grp:'빈카알칼로이드',form:'inj',conc:1,amt:'mg',
+  dog:{u:'m2',lo:2,hi:3.5,s:'MCT: 2 mg/m² 매주×4 → 격주×4 (3–3.5까지 증량 가능, 3.5는 q2w)'},cat:null,
+  tox:[3,1,0,0,1,0,1,0,3],nadir:'7일',mdr:2,ren:'',hep:'빌리루빈 상승 시 감량',
+  cau:['빈크리스틴보다 골수억제 강함 — 3.5 mg/m²에서 7일째 호중구 <500 흔함','발포제','요로상피암 연구: 15 kg 미만 2 mg/m², 이상 2.5 mg/m² q2w'],
+  catNote:'고양이 용량 자료 제한 — 종양내과 상의'},
+ {k:'cyc',n:'사이클로포스파마이드',en:'Cyclophosphamide',cls:'알킬화제',grp:'알킬화제',form:'inj',conc:20,amt:'mg',
+  dog:{u:'m2',lo:200,hi:250,s:'IV 또는 PO, 1회 또는 3–4일 분할 (메트로노믹 10–15 mg/m²/일 별도)'},cat:{u:'m2',lo:200,hi:300,s:'PO 1회 q3w (COP)'},
+  tox:[2,2,0,0,0,3,0,0,0],nadir:'7–14일',mdr:0,ren:'중증 신부전 시 감량',hep:'',
+  cau:['무균성 출혈성 방광염 — 오전 투여, 푸로세마이드 병용, 배뇨 기회 충분히','방광염 발생 시 영구 중단 → 클로람부실로 대체','경구 50 mg 정제 — 소형 환자는 조제']},
+ {k:'ccnu',n:'로무스틴 (CCNU)',en:'Lomustine',cls:'니트로소우레아',grp:'알킬화제',form:'po',amt:'mg',
+  dog:{u:'m2',lo:60,hi:90,s:'PO q3w (단독 70–90, LOPP 병용 50–70)'},cat:{u:'m2',lo:50,hi:60,s:'PO q3–6w (또는 10 mg/마리)'},
+  tox:[3,1,0,1,3,0,0,0,0],nadir:'호중구 7일, 혈소판 누적',mdr:0,ren:'',hep:'🚩 누적 간독성 — 매 투여 전 ALT, 기존 간질환이면 피함',
+  cau:['혈소판 감소가 누적됨 — 투여 거듭할수록 회복 지연','Denamarin(SAMe+실리빈) 병용 시 ALT 상승 감소','혈액뇌장벽 통과 — 중추신경 림프종·조직구육종','캡슐 10/40/100 mg — 대부분 조제 필요']},
+ {k:'chl',n:'클로람부실',en:'Chlorambucil',cls:'알킬화제',grp:'알킬화제',form:'po',amt:'mg',
+  dog:{u:'m2',lo:2,hi:6,s:'PO q24–48h (저등급: 6 mg/m² 10–14일 → 3 mg/m²)'},cat:{u:'m2',lo:20,hi:20,s:'PO q2w (또는 2 mg/마리 q48–72h)'},
+  tox:[1,1,0,0,0,0,1,0,0],nadir:'7–14일 (완만)',mdr:0,ren:'',hep:'',
+  cau:['2 mg 정제 — 분할하지 말고 정제 단위로 반올림 또는 조제','고양이: 드물게 근간대경련(myoclonus)'],catCau:['고양이 근간대경련 드묾 — 발생 시 중단']},
+ {k:'mel',n:'멜팔란',en:'Melphalan',cls:'알킬화제',grp:'알킬화제',form:'po',amt:'mg',
+  dog:{u:'kg',lo:0.05,hi:0.1,s:'PO 0.1 mg/kg q24h ×10일 → 0.05 mg/kg q24h (또는 7 mg/m² ×5일 q3w 펄스)'},cat:{u:'kg',lo:0.1,hi:0.1,s:'PO q24h ×10–14일 → q48h'},
+  tox:[2,1,0,0,0,0,0,0,0],nadir:'누적 (혈소판)',mdr:0,ren:'신부전 시 감량 고려',hep:'',
+  cau:['혈소판 누적 감소 — 2–3주마다 CBC','2 mg 정제']},
+ {k:'carbo',n:'카보플라틴',en:'Carboplatin',cls:'백금',grp:'백금',form:'inj',conc:10,amt:'mg',
+  dog:{u:'m2',lo:300,hi:300,s:'IV q3w'},cat:{u:'m2',lo:200,hi:240,s:'IV q3–4w'},
+  tox:[3,1,0,1,0,0,0,0,0],nadir:'개 10–14일 (최대 21일), 고양이 14–21일',mdr:0,ren:'신장 배설 → 신기능 저하 시 감량 또는 GFR 기반 용량',hep:'',
+  cau:['고양이는 최저점이 늦음 (약 17일) — 7일 CBC만으로 안심 금물','시스플라틴과 달리 고양이 사용 가능, 이뇨 불필요']},
+ {k:'cis',n:'시스플라틴',en:'Cisplatin',cls:'백금',grp:'백금',form:'inj',conc:1,amt:'mg',
+  dog:{u:'m2',lo:60,hi:70,s:'IV q3w, 0.9% NaCl 이뇨(투여 전후 수 시간) 필수'},cat:null,catContra:true,
+  tox:[1,3,0,3,0,0,1,0,1],nadir:'6–15일 (경미)',mdr:0,ren:'🚩 신독성 — 신기능 저하 시 금기',hep:'',
+  cau:['강한 구토 — 마로피탄트 전처치','식염수 이뇨 없이 투여 금지'],catNote:'🚩 고양이 금기 — 치명적 폐부종'},
+ {k:'mitox',n:'미토잔트론',en:'Mitoxantrone',cls:'안트라센디온',grp:'안트라사이클린',form:'inj',conc:2,amt:'mg',
+  dog:{u:'m2',lo:5,hi:6,s:'IV q3w'},cat:{u:'m2',lo:6,hi:6.5,s:'IV q3w'},
+  tox:[3,1,1,0,0,0,0,0,1],nadir:'7–10일',mdr:1,ren:'',hep:'',
+  cau:['독소루비신보다 심독성 낮음 — 누적 독소 한계 도달 시 대안','소변·공막 청록색 변색 (무해)']},
+ {k:'dtic',n:'다카바진 (DTIC)',en:'Dacarbazine',cls:'알킬화제',grp:'구제 약물',form:'inj',conc:10,amt:'mg',
+  dog:{u:'m2',lo:800,hi:1000,s:'IV 6–8시간 주입 q2–3w (DMAC 구성)'},cat:null,
+  tox:[2,3,0,0,1,0,0,0,2],nadir:'7–10일',mdr:0,ren:'',hep:'간 대사',
+  cau:['강한 구토 — 항구토제 전처치','빛 차단 투여','혈관 자극'],catNote:'고양이 자료 제한'},
+ {k:'actd',n:'액티노마이신 D',en:'Dactinomycin',cls:'항종양 항생제',grp:'구제 약물',form:'inj',conc:0.5,amt:'mg',
+  dog:{u:'m2',lo:0.5,hi:0.75,s:'IV q2–3w'},cat:null,
+  tox:[2,2,0,0,1,0,0,0,3],nadir:'7–10일',mdr:2,ren:'',hep:'간기능 저하 시 감량',
+  cau:['강한 발포제','MDR1 감량 대상'],catNote:'고양이 자료 제한'},
+ {k:'proc',n:'프로카바진',en:'Procarbazine',cls:'알킬화제',grp:'구제 약물',form:'po',amt:'mg',
+  dog:{u:'m2',lo:50,hi:50,s:'PO q24h ×14일 (LOPP)'},cat:null,
+  tox:[2,2,0,0,1,0,1,0,0],nadir:'7–14일',mdr:0,ren:'',hep:'',
+  cau:['약한 MAO 억제 — 세로토닌성 약물(트라마돌·SSRI 등) 병용 주의','국내는 조제 필요'],catNote:'고양이 자료 제한'},
+ {k:'lasp',n:'L-아스파라기나제',en:'L-asparaginase',cls:'효소',grp:'기타',form:'inj',conc:2000,amt:'IU',
+  dog:{u:'kg',lo:400,hi:400,s:'IM 또는 SC 1회 (또는 10,000 IU/m²)'},cat:{u:'kg',lo:400,hi:400,s:'IM 또는 SC'},
+  tox:[0,1,0,0,1,0,0,3,0],nadir:'해당 없음 (골수억제 거의 없음)',mdr:0,ren:'',hep:'',
+  cau:['아나필락시스 — IV 금지, IM/SC 후 30–60분 관찰','췌장염·응고장애 가능','반복 투여 시 항체로 효과 감소','농도는 재구성량에 따라 다름 — 농도 칸 확인']},
+ {k:'pred',n:'프레드니솔론',en:'Prednisolone',cls:'글루코코르티코이드',grp:'기타',form:'po',amt:'mg',
+  dog:{u:'m2',lo:40,hi:40,s:'PO q24h 시작 후 수주에 걸쳐 감량 (≈2 mg/kg)'},cat:{u:'kg',lo:1,hi:2,s:'PO q24h (프레드니손 아닌 프레드니솔론)'},
+  tox:[0,1,0,0,1,0,0,0,0],nadir:'해당 없음',mdr:0,ren:'',hep:'간효소 상승(스테로이드 간병증)',
+  cau:['항암 계획 전 단독 투여는 이후 다제내성 유발 가능','🚩 NSAID 병용 금지 — 위장관 궤양·천공','다음·다뇨, 당뇨 악화']},
+ {k:'toc',n:'토세라닙',en:'Toceranib (Palladia)',cls:'티로신 키나제 억제제',grp:'표적·기타',form:'po',amt:'mg',
+  dog:{u:'kg',lo:2.4,hi:2.9,s:'PO 월·수·금 또는 격일'},cat:{u:'kg',lo:2.5,hi:3,s:'PO 월·수·금 (허가 외)'},
+  tox:[1,3,1,2,2,0,0,0,0],nadir:'경미',mdr:0,ren:'단백뇨 — UPC 추적',hep:'간효소 상승',
+  cau:['위장관 독성(설사·식욕부진) 흔함 — 투여일 조정','고혈압·단백뇨 — 혈압·UPC 정기 측정','NSAID 병용 시 위장관 궤양 주의','정제 10/15/50 mg — 분할 금지']},
+ {k:'pirox',n:'피록시캄',en:'Piroxicam',cls:'NSAID',grp:'표적·기타',form:'po',amt:'mg',
+  dog:{u:'kg',lo:0.3,hi:0.3,s:'PO q24h, 음식과 함께'},cat:{u:'kg',lo:0.3,hi:0.3,s:'PO q24–48h'},
+  tox:[0,3,0,2,1,0,0,0,0],nadir:'해당 없음',mdr:0,ren:'🚩 신기능 저하·탈수 시 피함',hep:'',
+  cau:['🚩 스테로이드 병용 금지','위장관 궤양 — 구토·흑변 시 중단','반감기 길어 다른 NSAID 전환 시 5일 휴약']},
+ {k:'arac',n:'시타라빈',en:'Cytarabine',cls:'대사길항제',grp:'표적·기타',form:'inj',conc:20,amt:'mg',
+  dog:{u:'m2',lo:300,hi:600,s:'총량을 SC 4회 분할 q12h ×2일, 또는 8–24시간 CRI'},cat:{u:'m2',lo:300,hi:600,s:'SC 분할 또는 CRI (자료 제한)'},
+  tox:[2,1,0,0,1,0,0,0,0],nadir:'5–7일',mdr:0,ren:'',hep:'간 대사',
+  cau:['혈액뇌장벽 통과 — 중추신경 림프종','CRI가 SC보다 노출 시간 길어 효과적이라는 보고']},
+ {k:'rabac',n:'라박포사딘',en:'Rabacfosadine (Tanovea)',cls:'뉴클레오타이드 유사체',grp:'구제 약물',form:'inj',conc:8.2,amt:'mg',
+  dog:{u:'kg',lo:1,hi:1,s:'IV 30분 주입 q3w, 최대 5회 (부작용 시 0.8 → 0.66 mg/kg)'},cat:null,
+  tox:[2,2,0,0,1,0,0,0,0],nadir:'7–14일',mdr:0,ren:'',hep:'',
+  cau:['🚩 치명적 폐섬유화 가능 — 웨스트하이랜드 화이트테리어 금기, 다른 테리어 주의','피부병변(이염·탈모) 흔함','국내 유통 여부 확인'],catNote:'고양이 사용 안 함'}
+];
+const GROUPS=[['안트라사이클린',['doxo','mitox']],['빈카알칼로이드',['vcr','vbl']],['알킬화제',['cyc','ccnu','chl','mel']],['백금',['carbo','cis']],['구제 약물',['dtic','actd','proc','rabac']],['표적·기타',['lasp','pred','toc','pirox','arac']]];
+
+// ---------- 종양 ----------
+// a: 약물별 반응 등급 (없으면 0), rec: 표준 조합, zero: 등급 0 약물에 대한 근거 설명
+const T=[
+ {k:'lymB',sp:'dog',n:'림프종 — 다중심성 B세포 (개)',a:{doxo:3,vcr:3,cyc:3,pred:3,lasp:2,ccnu:2,mitox:2,dtic:2,actd:2,rabac:2,mel:2,proc:2,vbl:1,carbo:1,chl:1,arac:1},rec:['vcr','cyc','doxo','pred'],
+  txt:'CHOP 기반 19–25주 프로토콜. 관해율 높고 B세포가 T세포보다 예후 양호. 재발 시 구제: 로무스틴, LOPP, DMAC(덱사메타손·멜팔란·액티노마이신 D·다카바진), 라박포사딘.',
+  note:['면역표현형(유세포·PARR) 확인 후 프로토콜 결정','프레드니솔론 단독 선투여는 피함 — 이후 관해 기간 단축']},
+ {k:'lymT',sp:'dog',n:'림프종 — 고등급 T세포 (개)',a:{ccnu:3,proc:3,vcr:3,pred:3,lasp:2,dtic:2,doxo:1,cyc:1,mitox:1,rabac:1,actd:1,mel:1},rec:['ccnu','vcr','proc','pred'],
+  txt:'LOPP(로무스틴·빈크리스틴·프로카바진·프레드니솔론)를 1차로 고려. 후향 31마리 반응률 97%, 중앙 생존 323일 (Brown 2018). CHOP과의 무작위 비교는 진행 중.',
+  note:['T-zone 림프종(저등급)은 별개 — 무증상이면 관찰, 치료 시 클로람부실+프레드','고칼슘혈증 흔함']},
+ {k:'mct',sp:'dog',n:'비만세포종 — 고등급·전이·불완전 절제 (개)',a:{vbl:3,pred:3,toc:3,ccnu:2,chl:1,cyc:1},rec:['vbl','pred'],
+  txt:'빈블라스틴 2 mg/m² 매주×4 → 격주×4 + 프레드니솔론. 3–3.5 mg/m²까지 증량 가능하나 3.5에서는 호중구감소 빈번. c-kit 변이·재발 시 토세라닙.',
+  note:['H1·H2 차단제 병용 (디펜히드라민·파모티딘)','국소 조절은 수술·방사선이 핵심']},
+ {k:'osa',sp:'dog',n:'골육종 — 절단 후 보조 (개)',a:{carbo:3,cis:3,doxo:2,cyc:1,pirox:1,toc:0},rec:['carbo'],
+  txt:'절단 + 카보플라틴 300 mg/m² q3w 4–6회. 카보 6회 단독이 카보·독소 교대보다 DFI 김 (425 vs 135일). 시스플라틴도 유효 (개만).',
+  note:['진통: NSAID·가바펜틴·비스포스포네이트'],zero:{toc:'무작위 시험에서 카보플라틴 후 토세라닙 유지요법이 DFI·생존 개선 없음 (London 2015)'}},
+ {k:'hsa',sp:'dog',n:'혈관육종 — 비장 수술 후 (개)',a:{doxo:3,cyc:2,vcr:2,chl:1,ccnu:1,dtic:1,toc:0},rec:['doxo'],
+  txt:'수술 + 독소루비신 단독 또는 VAC(빈크리스틴·독소·사이클로). 보조요법으로 생존이 수 개월 늘어나는 수준.',
+  note:['독소 전 심초음파 — 심장 혈관육종·심낭삼출 확인'],zero:{toc:'독소 후 토세라닙 유지요법이 DFI·생존 개선 없음 (Gardner 2015)'}},
+ {k:'tcc',sp:'dog',n:'요로상피암 (TCC/UC, 개)',a:{pirox:3,vbl:3,mitox:3,carbo:2,chl:2,toc:1,cis:1,doxo:1},rec:['pirox','vbl'],
+  txt:'NSAID(피록시캄 0.3 mg/kg q24h) + 빈블라스틴 또는 미토잔트론. 무작위 연구: 빈블라스틴+피록시캄 관해 58.3% vs 빈블라스틴 단독 22.2% (Knapp 2016).',
+  note:['시스플라틴+NSAID는 반응 높으나 신독성 커서 일반적으로 피함','요도 폐색 대비 (스텐트·방광루)']},
+ {k:'sts',sp:'dog',n:'연부조직육종 — 고등급·불완전 절제 (개)',a:{doxo:2,cyc:2,pirox:1,chl:1,toc:1},rec:['doxo'],
+  txt:'넓은 절제·방사선이 주치료. 고등급에서 독소루비신 보조, 메트로노믹 사이클로포스파마이드+NSAID는 불완전 절제 후 재발 지연 보고.',
+  note:['항암 이득 근거 제한 — 고등급·전이 위험 높을 때 위주']},
+ {k:'aga',sp:'dog',n:'항문낭 선암 (개)',a:{carbo:2,toc:2,mitox:1,cis:1,doxo:1},rec:['carbo'],
+  txt:'수술(± 림프절 절제) ± 방사선, 보조로 카보플라틴 또는 토세라닙.',note:['고칼슘혈증 흔함 — 이온화 칼슘 확인']},
+ {k:'mm',sp:'dog',n:'다발성 골수종 (개)',a:{mel:3,pred:3,cyc:2,chl:1,doxo:1,vcr:1},rec:['mel','pred'],
+  txt:'멜팔란 + 프레드니솔론. 반응률 높고 장기 생존 보고.',note:['혈소판 누적 감소 → 2–3주마다 CBC','고칼슘혈증·과점도·신부전 확인']},
+ {k:'hs',sp:'dog',n:'조직구육종 (개)',a:{ccnu:3,doxo:2,dtic:1},rec:['ccnu'],
+  txt:'로무스틴 단독, 또는 국소형은 수술·방사선 후 로무스틴 보조. 국소형이 파종형보다 예후 양호.',note:['버니즈 마운틴 독·플랫코티드 리트리버 호발']},
+ {k:'mel',sp:'dog',n:'구강 악성흑색종 (개)',a:{carbo:1,cis:1,toc:1},rec:['carbo'],
+  txt:'수술·방사선이 주치료. 항암제 반응은 제한적.',note:['흑색종 백신(Oncept) 국내 유통 확인 필요']},
+ {k:'cll',sp:'both',n:'만성 림프구성 백혈병',a:{chl:3,pred:3,cyc:1,vcr:1},rec:['chl','pred'],
+  txt:'무증상이면 관찰. 혈구감소·장기비대 등 증상 시 클로람부실 + 프레드니솔론.',note:[]},
+ {k:'cnsL',sp:'both',n:'중추신경 림프종',a:{arac:3,ccnu:2,pred:2,proc:1},rec:['arac','pred'],
+  txt:'시타라빈(CRI 또는 SC) + 프레드니솔론, 로무스틴 병행 고려. 혈액뇌장벽 통과가 핵심.',note:[]},
+ {k:'fLGL',sp:'cat',n:'위장관 소세포 림프종 (고양이)',a:{chl:3,pred:3,cyc:1,ccnu:1},rec:['chl','pred'],
+  txt:'클로람부실 20 mg/m² PO q2w 또는 2 mg/마리 q48–72h + 프레드니솔론. 반응률 높고 장기 생존 흔함.',note:['IBD와 감별 — 조직검사·클론성 검사']},
+ {k:'fHGL',sp:'cat',n:'대세포·고등급 림프종 (고양이)',a:{vcr:3,cyc:3,pred:3,doxo:2,ccnu:2,lasp:1,mitox:1,chl:0},rec:['vcr','cyc','pred'],
+  txt:'COP 또는 CHOP. 관해 여부가 예후를 크게 가름 — 무반응이면 예후 불량.',note:['FeLV/FIV 확인','독소루비신은 누적 신독성 — 신기능 확인'],zero:{chl:'고등급 림프종에는 클로람부실 단독 부적합'}},
+ {k:'fISS',sp:'cat',n:'주사부위 육종 (고양이)',a:{doxo:2,carbo:1,ccnu:1,toc:1},rec:['doxo'],
+  txt:'첫 수술의 광범위 절제 + 방사선이 핵심. 독소루비신 보조 근거는 제한적.',note:[]},
+ {k:'fMam',sp:'cat',n:'유선암 (고양이)',a:{doxo:2,carbo:1,cyc:1,toc:1},rec:['doxo'],
+  txt:'일측·양측 유방 전절제 ± 독소루비신 보조. 보조 항암 이득 근거는 혼재.',note:[]}
+];
+
+const S={tumor:'lymB',sp:'dog',sel:['vcr','cyc','doxo','pred'],wt:null,mdr:'nn',neut:null,plt:null,cumDox:0,renal:false,hep:false,heart:false,lung:false,conc:{}};
+const $=id=>document.getElementById(id);
+const drug=k=>D.find(d=>d.k===k);
+const tumor=()=>T.find(t=>t.k===S.tumor);
+const grade=(t,k)=>t.a[k]||0;
+const RL=['없음','약함','대체','표준'];
+const fmt=(x,dp)=>{if(x===null||x===undefined||!isFinite(x))return'—';const d=dp!==undefined?dp:(x>=100?0:x>=10?1:2);return(+x.toFixed(d)).toLocaleString('ko-KR',{maximumFractionDigits:d})};
+function bsa(){if(!S.wt||S.wt<=0)return null;return(S.sp==='dog'?10.1:10.0)*Math.pow(S.wt,2/3)/100}
+function tox(d,i){const key=TOX[i][0];if(S.sp==='cat'&&d.catTox&&d.catTox[key]!==undefined)return d.catTox[key];return d.tox[i]}
+function spDose(d){
+ if(S.sp==='cat')return d.cat;
+ if(d.smallDog&&S.wt&&S.wt<d.smallDog.maxKg)return{...d.dog,...d.smallDog,small:true};
+ return d.dog;
+}
+function unavailable(d){return S.sp==='cat'&&!d.cat}
+function conc(d){return S.conc[d.k]!==undefined?S.conc[d.k]:d.conc}
+function mdrFactor(d){if(d.mdr!==2)return 1;return S.mdr==='mm'?0.5:S.mdr==='mn'?0.75:1}
+
+function renderTumorSelect(){
+ const list=T.filter(t=>t.sp===S.sp).concat(T.filter(t=>t.sp==='both'));
+ if(!list.some(t=>t.k===S.tumor)){S.tumor=list[0].k;S.sel=[...list[0].rec]}
+ $('tumor').innerHTML=list.map(t=>`<option value="${t.k}"${t.k===S.tumor?' selected':''}>${t.n}</option>`).join('');
+}
+function renderTumorInfo(){
+ const t=tumor();
+ const rec=t.rec.map(k=>drug(k).n).join(' + ');
+ $('tumorInfo').innerHTML=`
+  <div><div class="k">표준 조합</div><div><b>${rec}</b></div></div>
+  <div><div class="k">권장</div><div>${t.txt}</div></div>
+  ${t.note.length?`<div><div class="k">주의</div><ul style="margin:2px 0 0;padding-left:18px">${t.note.map(n=>`<li>${n}</li>`).join('')}</ul></div>`:''}`;
+}
+function renderDrugs(){
+ const t=tumor();
+ $('drugGroups').innerHTML=GROUPS.map(([l,ks])=>`<div class="dg"><span class="dg-l">${l}</span>${ks.map(k=>{const d=drug(k);const on=S.sel.includes(k);const g=grade(t,k);const na=unavailable(d);
+  return `<button class="chip${na?' na':''}" data-d="${k}" aria-pressed="${on}" title="${na?(d.catNote||'고양이 자료 없음'):''}">${d.n}<span class="tier r${g}">${RL[g]}</span></button>`}).join('')}</div>`).join('');
+}
+
+function evaluate(){
+ const t=tumor(),sel=S.sel.map(drug),A=[];
+ if(!sel.length)return{A:[{l:'info',t:'안내',m:'항암제를 하나 이상 선택하십시오.'}],avg:null};
+ // 종 금기
+ sel.forEach(d=>{if(S.sp==='cat'&&d.catContra)A.push({l:'crit',t:'금기',m:`<b>${d.n}</b>: ${d.catNote}`});
+  else if(unavailable(d))A.push({l:'warn',t:'고양이',m:`<b>${d.n}</b>: ${d.catNote||'고양이 용량 자료 없음'}`});});
+ // 종양 반응
+ sel.forEach(d=>{const g=grade(t,d.k);
+  if(g===0)A.push({l:'warn',t:'근거',m:`<b>${d.n}</b>: 이 종양에서 효과 근거 없음${t.zero&&t.zero[d.k]?' — '+t.zero[d.k]:''}`});
+  else if(g===1)A.push({l:'info',t:'근거',m:`<b>${d.n}</b>: 이 종양에서 반응 제한적`});});
+ const miss=t.rec.filter(k=>!S.sel.includes(k));
+ if(miss.length)A.push({l:'info',t:'표준',m:`표준 조합 중 미선택: ${miss.map(k=>drug(k).n).join(', ')}`});
+ // 혈구 기준
+ const myelo=sel.filter(d=>tox(d,0)>=1);
+ if(S.neut!==null&&myelo.length){
+  if(S.neut<1500)A.push({l:'crit',t:'호중구',m:`호중구 ${fmt(S.neut,0)}/µL — 1,500 미만: 골수억제 약물 투여 연기 (VCOG 2등급 이상)`});
+  else if(S.neut<2000)A.push({l:'warn',t:'호중구',m:`호중구 ${fmt(S.neut,0)}/µL — 1,500–2,000: 병원 기준에 따라 연기 또는 감량 검토`});}
+ if(S.plt!==null&&myelo.length){
+  if(S.plt<50000)A.push({l:'crit',t:'혈소판',m:`혈소판 ${fmt(S.plt,0)}/µL — 50,000 미만: 투여 연기`});
+  else if(S.plt<100000&&sel.some(d=>['ccnu','carbo','mel'].includes(d.k)))A.push({l:'warn',t:'혈소판',m:`혈소판 ${fmt(S.plt,0)}/µL — 로무스틴·카보플라틴·멜팔란은 혈소판 감소가 누적됨, 투여 연기 검토`});}
+ // 독성 중복
+ const bm3=sel.filter(d=>tox(d,0)===3),gi3=sel.filter(d=>tox(d,1)===3);
+ if(bm3.length>=2)A.push({l:'warn',t:'중복',m:`골수억제 주요 약물 ${bm3.length}종 (${bm3.map(d=>d.n).join(', ')}) — 같은 날 병용이 아니라 프로토콜상 교대 투여인지 확인`});
+ if(gi3.length>=2)A.push({l:'warn',t:'중복',m:`위장관 독성 주요 약물 ${gi3.length}종 (${gi3.map(d=>d.n).join(', ')}) — 항구토제·위장보호제 준비`});
+ const has=k=>S.sel.includes(k);
+ if(has('pred')&&has('pirox'))A.push({l:'crit',t:'금지',m:'프레드니솔론 + 피록시캄: 위장관 궤양·천공 — 병용 금지'});
+ if(has('toc')&&has('pirox'))A.push({l:'warn',t:'중복',m:'토세라닙 + 피록시캄: 위장관 궤양·신독성 위험 증가 — 흑변·구토·Cre 감시'});
+ // 독소루비신 누적·심장
+ if(has('doxo')){
+  if(S.heart)A.push({l:'crit',t:'심장',m:'독소루비신: 심장질환·수축력 저하 환자에서 피함 — 미토잔트론 등 대안'});
+  if(S.sp==='dog'){const per=S.wt&&S.wt<15?(()=>{const b=bsa();return b?S.wt*1/b:30})():30;const next=(S.cumDox||0)+per;
+   if(next>=240)A.push({l:'crit',t:'누적',m:`독소루비신 누적 ${fmt(S.cumDox,0)} → 이번 투여 후 약 ${fmt(next,0)} mg/m²: 240 이상 — 심독성 위험 높음`});
+   else if(next>180)A.push({l:'warn',t:'누적',m:`독소루비신 누적 ${fmt(S.cumDox,0)} → 이번 투여 후 약 ${fmt(next,0)} mg/m²: 180 초과 — 투여 전 심초음파`});}
+  if(S.sp==='cat'&&S.renal)A.push({l:'crit',t:'신장',m:'고양이 + 신기능 저하: 독소루비신 누적 신독성 — 피함'});
+  if(S.sp==='dog'&&S.wt&&S.wt<15)A.push({l:'info',t:'소형견',m:`체중 ${S.wt} kg (<15 kg): 독소루비신 1 mg/kg 기준으로 계산 (30 mg/m² 과다노출 회피)`});}
+ // 신장
+ if(S.renal)sel.forEach(d=>{if(d.k==='cis'||d.k==='pirox')A.push({l:'crit',t:'신장',m:`<b>${d.n}</b>: ${d.ren}`});else if(d.ren&&!(d.k==='doxo'))A.push({l:'warn',t:'신장',m:`<b>${d.n}</b>: ${d.ren}`});});
+ // 간
+ if(S.hep)sel.forEach(d=>{if(d.hep)A.push({l:d.k==='ccnu'?'crit':'warn',t:'간',m:`<b>${d.n}</b>: ${d.hep}`});});
+ // 폐
+ if(has('rabac'))A.push({l:S.lung?'crit':'warn',t:'폐',m:S.lung?'라박포사딘: 만성 폐질환·테리어 — 치명적 폐섬유화 위험, 피함':'라박포사딘: 폐섬유화 가능 — 호흡기 증상·흉부 방사선 감시, 국내 유통 확인'});
+ // MDR1
+ const mdrD=sel.filter(d=>d.mdr===2);
+ if(S.sp==='dog'&&mdrD.length){
+  if(S.mdr==='mm'||S.mdr==='mn')A.push({l:'warn',t:'MDR1',m:`${S.mdr==='mm'?'동형(M/M)':'이형(M/N)'}: ${mdrD.map(d=>d.n).join(', ')} 첫 투여 ${S.mdr==='mm'?'50':'25'}% 감량 후 내약성 따라 증량`});
+  else if(S.mdr==='unk')A.push({l:'info',t:'MDR1',m:`${mdrD.map(d=>d.n).join(', ')}는 P-당단백 기질 — 콜리·셸티·오스트레일리안 셰퍼드 등 목양견은 투여 전 MDR1 검사`});}
+ // 약물별 고정 안내
+ if(has('cyc'))A.push({l:'info',t:'방광',m:'사이클로포스파마이드: 무균성 출혈성 방광염 예방 — 오전 투여, 푸로세마이드, 배뇨 기회'});
+ if(has('lasp'))A.push({l:'warn',t:'과민',m:'L-아스파라기나제: IV 금지 — IM/SC 후 30–60분 관찰'});
+ if(has('cis')&&S.sp==='dog')A.push({l:'info',t:'투여',m:'시스플라틴: 0.9% NaCl 이뇨 + 마로피탄트 전처치 필수'});
+ const ves=sel.filter(d=>tox(d,8)===3);
+ if(ves.length)A.push({l:'info',t:'유출',m:`발포제 ${ves.map(d=>d.n).join(', ')} — 깨끗한 단일 천자 카테터, 투여 중 관찰`});
+ if(!A.some(a=>a.l==='crit'||a.l==='warn'))A.unshift({l:'ok',t:'양호',m:'금기·중복 경고 없음. 투여 전 CBC·생화학 재확인.'});
+ const order={crit:0,warn:1,info:2,ok:3};A.sort((a,b)=>order[a.l]-order[b.l]);
+ const gs=sel.map(d=>grade(t,d.k));
+ return{A,avg:gs.reduce((a,b)=>a+b,0)/gs.length,inc:t.rec.length-miss.length,recN:t.rec.length};
+}
+function renderResult(){
+ const {A,avg,inc,recN}=evaluate();
+ const crit=A.filter(a=>a.l==='crit').length,warn=A.filter(a=>a.l==='warn').length;
+ $('summary').innerHTML=avg===null?'':`
+  <div class="score">${avg.toFixed(1)}<small> / 3 평균 반응 등급</small></div>
+  <div class="score">${inc}<small> / ${recN} 표준 약물 포함</small></div>
+  <div class="row"><span class="pill" style="border-color:var(--crit);color:var(--crit)">위험 ${crit}</span><span class="pill" style="border-color:var(--warn);color:var(--warn)">주의 ${warn}</span></div>`;
+ $('alerts').innerHTML=A.map(a=>`<div class="alert ${a.l}"><span class="tag">${a.t}</span><span>${a.m}</span></div>`).join('');
+}
+function renderDose(){
+ const sel=S.sel.map(drug),b=bsa();
+ $('bsaOut').textContent=b?b.toFixed(3)+' m²':'— m²';
+ if(!sel.length){$('doseTable').innerHTML='<tbody><tr><td class="empty">항암제를 선택하면 표가 나타납니다.</td></tr></tbody>';return}
+ const head=`<thead><tr><th class="l">약물</th><th>용량</th><th>계산량</th><th>농도</th><th>투여량</th>${S.sp==='dog'&&S.mdr!=='nn'&&S.mdr!=='unk'?'<th>MDR1 조정</th>':''}<th class="l">일정</th></tr></thead>`;
+ const showMdr=S.sp==='dog'&&(S.mdr==='mn'||S.mdr==='mm');
+ const rows=sel.map(d=>{
+  const ds=spDose(d);
+  if(!ds)return `<tr><td class="l"><b>${d.n}</b></td><td colspan="${showMdr?6:5}" class="l" style="color:var(--crit)">${d.catNote||'이 종 자료 없음'}</td></tr>`;
+  const uLab=ds.u==='m2'?`${d.amt}/m²`:`${d.amt}/kg`;
+  const doseTxt=(ds.lo===ds.hi?fmt(ds.lo):`${fmt(ds.lo)}–${fmt(ds.hi)}`)+' '+uLab+(ds.small?' <span class="muted">(소형견)</span>':'');
+  const base=ds.u==='m2'?b:S.wt;
+  let amtTxt='—',volTxt='—',mdrTxt='';
+  if(base){const lo=ds.lo*base,hi=ds.hi*base;
+   amtTxt=`<span class="big">${lo===hi?fmt(lo):fmt(lo)+'–'+fmt(hi)}</span> ${d.amt}`;
+   if(d.form==='inj'){const c=conc(d);if(c>0){const vl=lo/c,vh=hi/c;volTxt=`<span class="big">${vl===vh?fmt(vl,2):fmt(vl,2)+'–'+fmt(vh,2)}</span> ml`}}
+   else volTxt='<span class="muted">경구 — 정제·조제</span>';
+   const f=mdrFactor(d);
+   if(showMdr)mdrTxt=f<1?`<span class="big" style="color:var(--warn)">${fmt(lo*f)}${lo!==hi?'–'+fmt(hi*f):''}</span> ${d.amt}${d.form==='inj'&&conc(d)>0?` (${fmt(lo*f/conc(d),2)}${lo!==hi?'–'+fmt(hi*f/conc(d),2):''} ml)`:''}`:'<span class="muted">조정 없음</span>';
+  }
+  const concCell=d.form==='inj'?`<input class="num-in sm" type="number" step="any" min="0" data-conc="${d.k}" value="${conc(d)}"> <span class="muted">${d.amt}/ml</span>`:'<span class="muted">—</span>';
+  return `<tr><td class="l"><b>${d.n}</b><span class="muted" style="display:block">${d.en}</span></td><td>${doseTxt}</td><td>${amtTxt}</td><td>${concCell}</td><td>${volTxt}</td>${showMdr?`<td>${mdrTxt}</td>`:''}<td class="l" style="min-width:220px">${ds.s}</td></tr>`;
+ }).join('');
+ $('doseTable').innerHTML=head+'<tbody>'+rows+'</tbody>'+(b?'':`<tbody><tr><td class="empty" colspan="7">체중을 입력하면 계산량이 표시됩니다.</td></tr></tbody>`);
+}
+function renderMatrix(){
+ const sel=S.sel.map(drug);
+ const list=T.filter(t=>t.sp===S.sp).concat(T.filter(t=>t.sp==='both')).sort((a,b)=>(b.k===S.tumor)-(a.k===S.tumor));
+ if(!sel.length){$('matrix').innerHTML='<tbody><tr><td class="empty">항암제를 선택하면 표가 나타납니다.</td></tr></tbody>';return}
+ const head=`<thead><tr><th class="org">종양</th>${sel.map(d=>`<th title="${d.en}">${d.n}</th>`).join('')}${sel.length>1?'<th>최고</th>':''}</tr></thead>`;
+ const body=list.map(t=>{const gs=sel.map(d=>grade(t,d.k));const best=Math.max(...gs);
+  return `<tr class="${t.k===S.tumor?'cur':''}"><td class="org">${t.n}</td>${gs.map(g=>`<td><span class="cell c${g}">${g}</span></td>`).join('')}${sel.length>1?`<td class="comb"><span class="cell c${best}">${best}</span></td>`:''}</tr>`}).join('');
+ $('matrix').innerHTML=head+'<tbody>'+body+'</tbody>';
+}
+function renderTox(){
+ const sel=S.sel.map(drug);
+ if(!sel.length){$('toxTable').innerHTML='<tbody><tr><td class="empty">항암제를 선택하면 표가 나타납니다.</td></tr></tbody>';return}
+ const hi=new Set();if(S.renal)hi.add('ren');if(S.hep)hi.add('hep');if(S.heart)hi.add('card');
+ if(S.neut!==null&&S.neut<2000||S.plt!==null&&S.plt<100000)hi.add('bm');
+ const hs=k=>hi.has(k)?'background:var(--warn-bg);color:var(--warn)':'';
+ $('toxTable').innerHTML=`<thead><tr><th class="org">약물</th>${TOX.map(t=>`<th style="${hs(t[0])}">${t[1]}</th>`).join('')}<th>호중구 최저점</th></tr></thead><tbody>${sel.map(d=>`<tr><td class="org">${d.n}</td>${TOX.map((_,i)=>{const v=tox(d,i);return `<td>${v?`<span class="tx t${v}">${TL[v]}</span>`:'<span class="t0">–</span>'}</td>`}).join('')}<td class="l">${d.nadir}</td></tr>`).join('')}
+  ${sel.length>1?`<tr><td class="org"><b>최대</b></td>${TOX.map((_,i)=>{const v=Math.max(...sel.map(d=>tox(d,i)));const n=sel.filter(d=>tox(d,i)>=2).length;return `<td class="comb">${v?`<span class="tx t${v}">${TL[v]}</span>`:'–'}${n>=2?` <span class="muted">×${n}</span>`:''}</td>`}).join('')}<td class="comb"></td></tr>`:''}</tbody>`;
+}
+function renderCards(){
+ const sel=S.sel.map(drug);
+ if(!sel.length){$('cards').innerHTML='<p class="empty">선택한 약이 없습니다.</p>';return}
+ const dtxt=(x,a)=>x?`${x.lo===x.hi?fmt(x.lo):fmt(x.lo)+'–'+fmt(x.hi)} ${a}${x.u==='m2'?'/m²':'/kg'} · ${x.s}`:'';
+ $('cards').innerHTML=sel.map(d=>{const g=grade(tumor(),d.k);const sp=S.sp==='cat'?(d.catCau||[]):[];
+  const ds=S.sp==='cat'?(d.cat?dtxt(d.cat,d.amt):`<span style="color:var(--crit)">${d.catNote||'자료 없음'}</span>`):dtxt(d.dog,d.amt)+(d.smallDog?` <span class="muted">(${d.smallDog.maxKg} kg 미만 ${d.smallDog.lo} ${d.amt}/kg)</span>`:'');
+  return `<article class="card"><div><h3>${d.n} <span class="tier r${g}">${RL[g]}</span></h3><div class="en">${d.en} · ${d.cls}</div></div>
+  <dl><dt>용량</dt><dd>${ds}</dd><dt>최저점</dt><dd>${d.nadir}</dd><dt>MDR1</dt><dd>${d.mdr===2?'감량 대상 (P-gp 기질)':d.mdr===1?'주의':'영향 적음'}</dd><dt>신장</dt><dd>${d.ren||'조정 거의 불필요'}</dd><dt>간</dt><dd>${d.hep||'특이사항 적음'}</dd></dl>
+  <ul>${d.cau.concat(sp).map(c=>`<li>${c}</li>`).join('')}</ul></article>`}).join('');
+}
+function render(){renderTumorInfo();renderDrugs();renderResult();renderDose();renderMatrix();renderTox();renderCards()}
+
+// ---------- 이벤트 ----------
+renderTumorSelect();render();
+$('tumor').addEventListener('change',e=>{S.tumor=e.target.value;S.sel=[...tumor().rec];render()});
+['dog','cat'].forEach(sp=>$('sp-'+sp).addEventListener('click',()=>{if(S.sp===sp)return;S.sp=sp;$('sp-dog').setAttribute('aria-pressed',sp==='dog');$('sp-cat').setAttribute('aria-pressed',sp==='cat');
+ renderTumorSelect();render()}));
+const numVal=v=>{const x=parseFloat(v);return isFinite(x)&&v!==''?x:null};
+$('wt').addEventListener('input',e=>{S.wt=numVal(e.target.value);render()});
+$('neut').addEventListener('input',e=>{S.neut=numVal(e.target.value);render()});
+$('plt').addEventListener('input',e=>{S.plt=numVal(e.target.value);render()});
+$('cumDox').addEventListener('input',e=>{S.cumDox=numVal(e.target.value)||0;render()});
+$('mdr').addEventListener('change',e=>{S.mdr=e.target.value;render()});
+[['m-renal','renal'],['m-hep','hep'],['m-heart','heart'],['m-lung','lung']].forEach(([id,k])=>$(id).addEventListener('change',e=>{S[k]=e.target.checked;render()}));
+$('drugGroups').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;const k=b.dataset.d;S.sel=S.sel.includes(k)?S.sel.filter(x=>x!==k):[...S.sel,k];render()});
+$('applyRec').addEventListener('click',()=>{S.sel=[...tumor().rec];render()});
+$('clearDrugs').addEventListener('click',()=>{S.sel=[];render()});
+$('doseTable').addEventListener('change',e=>{const k=e.target.dataset.conc;if(!k)return;const v=parseFloat(e.target.value);if(isFinite(v)&&v>0)S.conc[k]=v;else delete S.conc[k];render()});
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+</script>
+</body></html>
