@@ -40,6 +40,25 @@
     .card-body .flex-row { margin-bottom: 0; }
     .card-body label { font-size: 12.5px !important; }
     .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+    /* 수액 및 약물 탭: 한 줄 6개 컴팩트 그리드 */
+    #fluid .card-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-items: start; }
+    #fluid .card { padding: 8px 10px; }
+    #fluid .card-head { padding-bottom: 5px; margin-bottom: 6px; gap: 4px; flex-wrap: wrap; }
+    #fluid .card-title { font-size: 13.5px; }
+    #fluid .card-conc { font-size: 10.5px; }
+    #fluid .card-body label { font-size: 11.5px !important; }
+    #fluid .card-body label .text-xs { font-size: 10.5px; }
+    #fluid .card-body .input-field { padding: 5px 7px; font-size: 13px; }
+    #fluid .flex-row { gap: 6px; }
+    #fluid .card-body .p-2 { padding: 5px; }
+    #fluid .card-body .mb-3 { margin-bottom: 6px; }
+    #fluid .card-body .text-sm { font-size: 11.5px; }
+    #fluid .drug-result { font-size: 12.5px; padding: 7px; margin-top: 7px; }
+    #fluid .drug-result .text-xl { font-size: 1.05rem; }
+    #fluid .ph { margin-top: 7px; padding: 5px; font-size: 11px; }
+    #fluid .card.wide { grid-column: span 2; }
+    @media (max-width: 1350px) { #fluid .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (max-width: 1000px) { #fluid .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .drug-cat { margin-bottom: 22px; }
     .cat-title { font-size: 13px; font-weight: 800; color: #4c1d95; letter-spacing: .02em; margin: 0 0 8px 2px; padding-left: 8px; border-left: 4px solid #8b5cf6; }
     .drug-result { margin-top: 10px; background: #eef2ff; padding: 10px; border-radius: 8px; border: 1px solid #c7d2fe; text-align: center; font-weight: 700; color: #1e1b4b; font-size: 14px; }
@@ -1657,6 +1676,7 @@
 
     let mgso4RateManual = false;
     const RES_INSULIN = 'res_insulin';
+    let insuTableOpen = false;
     function calcInsulin() {
         const w = parseFloat(document.getElementById('fluidWeight').value);
         const resText = document.getElementById(RES_INSULIN);
@@ -1674,11 +1694,11 @@
         const conc = units / bag;                 // IU/ml
         const sc = bag / 250;                     // 250 ml 기준 프로토콜 속도 환산
         const rows = [
-            { lo: 250, hi: Infinity, lab: '> 250', r: 10, fl: '0.9% NaCl (덱스트로스 없음)' },
-            { lo: 200, hi: 250, lab: '200–250', r: 7, fl: '0.45% NaCl + 2.5% 덱스트로스' },
-            { lo: 150, hi: 200, lab: '150–200', r: 5, fl: '0.45% NaCl + 2.5% 덱스트로스' },
-            { lo: 100, hi: 150, lab: '100–150', r: 5, fl: '0.45% NaCl + 5% 덱스트로스' },
-            { lo: -Infinity, hi: 100, lab: '< 100', r: 0, fl: '0.45% NaCl + 5% 덱스트로스 (인슐린 중단)' },
+            { lo: 250, hi: Infinity, lab: '> 250', r: 10, fl: '0.9% NaCl' },
+            { lo: 200, hi: 250, lab: '200–250', r: 7, fl: '0.45% + 2.5%D' },
+            { lo: 150, hi: 200, lab: '150–200', r: 5, fl: '0.45% + 2.5%D' },
+            { lo: 100, hi: 150, lab: '100–150', r: 5, fl: '0.45% + 5%D' },
+            { lo: -Infinity, hi: 100, lab: '< 100', r: 0, fl: '0.45% + 5%D' },
         ];
         const hit = isNaN(bg) ? -1 : rows.findIndex(x => bg > x.lo && bg <= x.hi || (x.hi === Infinity && bg > x.lo));
         const tr = rows.map((x, i) => {
@@ -1695,8 +1715,8 @@
         if (hit >= 0) {
             const x = rows[hit];
             now = x.r
-                ? `<div class="mt-2 text-base">현재 BG ${bg} → 인슐린 라인 <span class="text-pink-600 text-xl font-extrabold">${(x.r * sc).toFixed(1)} ml/hr</span> (${(x.r * sc * conc / w).toFixed(3)} IU/kg/hr)<br><span class="text-sm">메인 수액: ${x.fl}</span></div>`
-                : `<div class="mt-2 text-base text-red-700">현재 BG ${bg} (<100) → <b>인슐린 CRI 중단</b>, 메인 수액 0.45% NaCl + 5% 덱스트로스</div>`;
+                ? `<div class="mt-2 text-sm">현재 BG ${bg} → 인슐린 라인 <span class="text-pink-600 text-xl font-extrabold">${(x.r * sc).toFixed(1)} ml/hr</span> (${(x.r * sc * conc / w).toFixed(3)} IU/kg/hr)<br><span class="text-sm">메인 수액: ${x.fl}</span></div>`
+                : `<div class="mt-2 text-sm text-red-700">현재 BG ${bg} (<100) → <b>인슐린 CRI 중단</b>, 메인 수액 0.45% NaCl + 5% 덱스트로스</div>`;
         }
         if (!isNaN(bg) && bg < 60) now += `<div class="mt-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 저혈당 (BG ${bg}) — 인슐린 중단, 덱스트로스 볼루스 고려</div>`;
         const smallBag = bag < 100 ? `<div class="mt-1">⚠️ 수액량 ${bag} ml: 라인 프라이밍 폐기분(50 ml) 대비 너무 적습니다. 250 ml 권장</div>` : '';
@@ -1704,20 +1724,22 @@
         <div class="text-sm text-indigo-800 mt-1">💉 U-100 인슐린 시린지로 <b>${units.toFixed(1)} unit</b> 눈금만큼 채취${insMl < 0.1 ? ' (일반 1 ml 시린지 사용 금지 — 0.1 ml 미만)' : ''}</div>
         <div class="text-xs text-indigo-700 mt-1 font-normal">[계산식] ${dose} IU/kg × ${w} kg = ${units.toFixed(1)} IU ÷ 100 IU/ml = ${insMl.toFixed(2)} ml · 최종 농도 ${conc.toFixed(3)} IU/ml</div>
         ${now}
-        <table class="w-full mt-2 text-xs font-normal border-collapse bg-white">
-            <tr class="bg-indigo-100 font-bold"><td class="border px-1">BG (mg/dL)</td><td class="border px-1">인슐린 ml/hr</td><td class="border px-1">IU/kg/hr</td><td class="border px-1">메인 수액</td></tr>
+        <details class="mt-2 text-left" ${insuTableOpen ? 'open' : ''} ontoggle="insuTableOpen = this.open">
+        <summary class="cursor-pointer text-xs font-bold text-indigo-700 bg-white border border-indigo-200 rounded-md px-2 py-1 select-none">📋 BG별 속도표 펼치기</summary>
+        <table class="w-full mt-1 text-xs font-normal border-collapse bg-white">
+            <tr class="bg-indigo-100 font-bold"><td class="border px-1">BG</td><td class="border px-1">ml/hr</td><td class="border px-1">IU/kg/hr</td><td class="border px-1">수액</td></tr>
             ${tr}
         </table>
         <div class="text-xs text-left font-normal text-gray-700 mt-2 leading-snug">
-            · 속도표: Macintire 프로토콜 (250 ml 기준 10/7/5/5 ml/hr${sc !== 1 ? `, ${bag} ml로 ×${sc.toFixed(2)} 환산` : ''})<br>
+            · 0.45% = 0.45% NaCl, D = 덱스트로스<br>            · 속도표: Macintire 프로토콜 (250 ml 기준 10/7/5/5 ml/hr${sc !== 1 ? `, ${bag} ml로 ×${sc.toFixed(2)} 환산` : ''})<br>
             · 덱스트로스 만들기: 1 L에 50% 포도당 50 ml → 2.5%, 100 ml → 5% (500 ml 백은 절반)
         </div>
+        </details>
         <div class="mt-2 text-xs text-left font-bold text-red-700 bg-red-50 border border-red-200 p-2 rounded-lg leading-snug">
-            ⚠️ 첫 50 ml를 라인에 흘려 버린 후 사용 (인슐린 튜브 흡착)<br>
-            ⚠️ 메인 수액과 별도 라인/시린지로, 수액속도 변경과 독립적으로 조절<br>
-            ⚠️ BG 1–2시간마다 측정, 시간당 50–100 mg/dL 이하로만 감소<br>
-            ⚠️ K⁺ <3.5 mEq/L면 칼륨 먼저/동시 보충 후 시작 (인슐린이 K⁺·P를 세포 내로 이동)<br>
-            ⚠️ 중증 탈수·쇼크: 수액 1–2시간(일부 최대 4–6시간) 먼저, 이후 인슐린 시작
+            ⚠️ 첫 50 ml 라인에 흘려 폐기 · 별도 라인<br>
+            ⚠️ BG q1–2h, 감소 ≤50–100 mg/dL/hr<br>
+            ⚠️ K⁺ <3.5면 칼륨 먼저/동시 보충<br>
+            ⚠️ 중증 탈수·쇼크: 수액 1–2h 먼저 후 시작
             ${smallBag}
         </div>`;
         if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
