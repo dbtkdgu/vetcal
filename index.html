@@ -101,6 +101,33 @@
     /* 상단 바로가기 버튼 */
     a.flex-1.py-2 { padding-top: 5px !important; padding-bottom: 5px !important; font-size: 12.5px !important; }
     .px-3.pt-3.pb-2 { padding: 6px 8px 4px !important; }
+
+    /* ===== PPN 탭 ===== */
+    #ppn .lbl { display:block; margin-bottom:3px; font-size:12px; font-weight:600; color:#374151; }
+    #ppn .inp { width:100%; padding:6px 9px; border:1px solid #d1d5db; border-radius:5px; font-size:14px; background:#fff; }
+    #ppn .inp:focus { outline:none; border-color:#8b5cf6; box-shadow:0 0 0 2px rgba(139,92,246,.2); }
+    #ppn .inp[readonly] { background:#f9fafb; color:#6b7280; }
+    #ppn .row { display:flex; gap:8px; margin-bottom:7px; align-items:flex-end; }
+    #ppn .row > div { flex:1; min-width:0; }
+    #ppn .tg { flex:1; padding:6px 10px; border:1px solid #d1d5db; background:#fff; border-radius:6px; font-size:13px; font-weight:600; color:#4b5563; }
+    #ppn .tg.on { background:#8b5cf6; color:#fff; border-color:#8b5cf6; }
+    #ppn .box { border:1px solid #e5e7eb; border-radius:8px; padding:9px; margin-bottom:8px; background:#fff; }
+    #ppn .sec { font-size:12.5px; font-weight:800; color:#4c1d95; margin:10px 0 5px; padding-left:7px; border-left:3px solid #8b5cf6; }
+    #ppn .comp { border:1px solid #e5e7eb; border-radius:8px; padding:8px 9px; margin-bottom:6px; }
+    #ppn .comp-h { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+    #ppn .comp-n { font-weight:800; font-size:13.5px; }
+    #ppn .rec { font-size:12px; color:#6d28d9; font-weight:700; }
+    #ppn .mini { font-size:11px; color:#6b7280; }
+    #ppn .stat { display:flex; justify-content:space-between; font-size:12.5px; padding:3px 0; border-bottom:1px dashed #f1f5f9; }
+    #ppn .stat b { font-size:13.5px; }
+    #ppn .al { border-left:4px solid; padding:6px 8px; border-radius:6px; font-size:12.5px; margin-bottom:5px; }
+    #ppn .al.crit { background:#fce8e6; border-color:#b3261e; color:#7f1d1d; }
+    #ppn .al.warn { background:#fff3d6; border-color:#8a5a00; color:#713f12; }
+    #ppn .al.info { background:#e5eef8; border-color:#2d5b8f; color:#1e3a5f; }
+    #ppn .al.ok { background:#e2f2e7; border-color:#3e8a5a; color:#14532d; }
+    #ppn .big { font-weight:800; color:#db2777; font-size:17px; }
+    #ppn .mixline { display:flex; justify-content:space-between; align-items:baseline; padding:5px 0; border-bottom:1px solid #f3e8ff; font-size:13.5px; }
+    #ppn .mixline:last-child { border-bottom:0; }
 </style>
 </head>
 <body class="p-2 md:p-6 flex justify-center">
@@ -119,6 +146,7 @@
         <div class="tab-btn" onclick="switchTab('feeding')">사료량</div>
         <div class="tab-btn" onclick="switchTab('sodium')">Na 교정</div>
         <div class="tab-btn" onclick="switchTab('transfusion')">수혈</div>
+        <div class="tab-btn" onclick="switchTab('ppn')">PPN</div>
     </div>
 
     <div class="p-4 md:p-7">
@@ -165,6 +193,7 @@
                     <option value="furosemide">푸로세마이드 (10mg/ml)</option>
                     <option value="nitroprusside">니트로프루시드 (25mg/ml)</option>
                     <option value="norepinephrine">노르에피네프린 (1mg/ml)</option>
+                    <option value="epinephrine">에피네프린 (1mg/ml)</option>
                     <option value="vasopressin">바소프레신 (20U/ml)</option>
                     <option value="metoclopramide">메토클로프로마이드 (5mg/ml)</option>
                     <option value="phenylephrine">페닐에프린 (10mg/ml)</option>
@@ -177,6 +206,7 @@
                     <option value="nicardipine">니카르디핀 (1mg/ml)</option>
                     <option value="kcl">KCl (2mEq/ml)</option>
                     <option value="dka">DKA (당뇨성 케톤산증)</option>
+                    <option value="insulin">인슐린 CRI (휴물린알 100 IU/ml)</option>
                     <option value="tpa">tPA (혈전용해제)</option>
                     <option value="mgso4">10% MgSO4 (0.8mEq/ml)</option>
                     <option value="lidocaine">리도카인 (20mg/ml)</option>
@@ -254,6 +284,24 @@
                         <div class="form-group">
                             <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
                             <input type="number" id="norepiFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcNorepinephrine()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 에피네프린 -->
+                <div id="epinephrineForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">용량 <span class="text-xs text-gray-500 font-normal ml-1">단위: μg/kg/min, 권장: 0.05~1 (아나필락시스 시작 0.05~0.1)</span></label>
+                        <input type="number" id="epiDose" class="input-field border-indigo-200 font-semibold" step="0.01" oninput="calcEpinephrine()">
+                    </div>
+                    <div class="flex-row">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총 수액양 (ml)</label>
+                            <input type="number" id="epiFluidVol" class="input-field border-indigo-200" step="10" value="30" oninput="calcEpinephrine()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
+                            <input type="number" id="epiFluidRate" class="input-field border-indigo-200" step="0.1" value="1" oninput="calcEpinephrine()">
                         </div>
                     </div>
                 </div>
@@ -503,6 +551,27 @@
                     </div>
                 </div>
 
+                <!-- Insulin CRI -->
+                <div id="insulinForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="mb-3 text-indigo-800 font-bold text-sm bg-indigo-50 p-2 rounded-lg border border-indigo-200">
+                        💉 휴물린알(Regular) 100 IU/ml · DKA/HHS 저용량 CRI (Macintire)
+                    </div>
+                    <div class="flex-row mb-3">
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">총량 <span class="text-xs text-gray-500 font-normal">IU/kg (개 2.2 · 냥 1.1)</span></label>
+                            <input type="number" id="insuDose" class="input-field border-indigo-200 font-semibold" step="0.1" oninput="calcInsulin()">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-indigo-800 font-bold">N/S 수액량 (ml)</label>
+                            <input type="number" id="insuBagVol" class="input-field border-indigo-200" step="10" value="250" oninput="calcInsulin()">
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <label class="text-indigo-800 font-bold">현재 혈당 <span class="text-xs text-gray-500 font-normal ml-1">mg/dL (입력 시 해당 속도 강조)</span></label>
+                        <input type="number" id="insuBG" class="input-field border-indigo-200 font-semibold" step="1" oninput="calcInsulin()">
+                    </div>
+                </div>
+
                 <!-- tPA -->
                 <div id="tpaForm" class="hidden bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                     <div class="input-group mb-3">
@@ -537,7 +606,7 @@
                         </div>
                         <div class="form-group">
                             <label class="text-indigo-800 font-bold">수액속도 (ml/hr)</label>
-                            <input type="number" id="mgso4FluidRate" class="input-field border-indigo-200" step="0.1" oninput="calcMgso4()">
+                            <input type="number" id="mgso4FluidRate" class="input-field border-indigo-200" step="0.1" oninput="mgso4RateManual = this.value !== ''; calcMgso4()">
                         </div>
                     </div>
                 </div>
@@ -937,6 +1006,158 @@
                 <div id="tfResultSub" class="text-xs text-gray-500 mt-2 font-medium"></div>
             </div>
         </div>
+        <!-- ========================================== -->
+        <!-- 7. PPN (부분 정맥영양) 계산기                -->
+        <!-- ========================================== -->
+        <div id="ppn" class="tab-content">
+    <div class="text-[15px] font-extrabold text-violet-800 mb-1">PPN (부분 정맥영양) 계산기</div>
+    <div class="mini mb-2">50% 포도당 + 아미노산 + 20% 지질을 베이스 수액에 혼합. 말초정맥 투여 기준 (삼투압 &lt;750 mOsm/L 목표).</div>
+
+    <!-- 1. 환자 -->
+    <div class="sec">1. 환자</div>
+    <div class="row">
+      <div>
+        <span class="lbl">종</span>
+        <div class="flex gap-1.5">
+          <button class="tg on" data-sp="dog" onclick="PPN.setSp('dog')">개</button>
+          <button class="tg" data-sp="cat" onclick="PPN.setSp('cat')">고양이</button>
+        </div>
+      </div>
+      <div style="flex:.8"><span class="lbl">체중 (kg)</span><input id="ppn_wt" type="number" step="0.1" class="inp font-bold" oninput="PPN.calc()"></div>
+    </div>
+    <div class="row">
+      <div><span class="lbl">RER (kcal/일)</span><input id="ppn_rer" class="inp" readonly></div>
+      <div><span class="lbl">PPN 배수 (× RER)</span><input id="ppn_mult" type="number" step="0.05" value="0.7" class="inp font-bold text-violet-700" oninput="PPN.calc()"></div>
+      <div><span class="lbl">PPN 목표 (kcal/일)</span><input id="ppn_per" class="inp font-bold" readonly></div>
+    </div>
+    <div class="mini mb-1">기본 0.7 = RER의 70% (Freeman PPN 워크시트). 장관영양을 일부 병행하면 그만큼 낮추세요.</div>
+
+    <!-- 2. 영양소 배분 -->
+    <div class="sec">2. 칼로리 배분 (%)</div>
+    <div class="row">
+      <div><span class="lbl">탄수화물</span><input id="ppn_pC" type="number" step="1" class="inp" oninput="PPN.markUser()"></div>
+      <div><span class="lbl">단백질</span><input id="ppn_pP" type="number" step="1" class="inp" oninput="PPN.markUser()"></div>
+      <div><span class="lbl">지질</span><input id="ppn_pL" type="number" step="1" class="inp" oninput="PPN.markUser()"></div>
+    </div>
+    <div class="flex justify-between items-center mb-1 gap-1">
+      <span id="ppn_splitNote" class="mini"></span>
+      <div class="flex gap-1 shrink-0">
+        <button onclick="PPN.toggleSplitInfo()" class="text-[11px] bg-violet-50 border border-violet-200 px-2 py-1 rounded font-bold text-violet-700">기본값이란? ▾</button>
+        <button onclick="PPN.reset()" class="text-[11px] bg-gray-100 px-2 py-1 rounded font-bold text-gray-600">기본값으로 되돌리기</button>
+      </div>
+    </div>
+    <div id="ppn_splitInfo" class="hidden box !bg-violet-50 !border-violet-200 text-[11.5px] leading-relaxed">
+      <b>체중별 기본값</b>은 PPN 목표 열량을 탄수화물·단백질·지질에 어떤 비율로 나눌지 체중 구간별로 정해 둔 표준값입니다 (Freeman PPN 워크시트).
+      <table class="w-full my-1.5 text-center border-collapse" id="ppn_splitTable">
+        <thead><tr class="bg-violet-100"><th class="py-1 text-left pl-1">체중</th><th>탄수화물</th><th>단백질</th><th>지질</th></tr></thead>
+        <tbody>
+          <tr data-band="0"><td class="text-left pl-1 py-0.5">개·고양이 3–5 kg</td><td>20%</td><td>20%</td><td>60%</td></tr>
+          <tr data-band="1"><td class="text-left pl-1 py-0.5">개·고양이 6–10 kg</td><td>25%</td><td>25%</td><td>50%</td></tr>
+          <tr data-band="2"><td class="text-left pl-1 py-0.5">개 11–30 kg</td><td>33%</td><td>33%</td><td>33%</td></tr>
+          <tr data-band="3"><td class="text-left pl-1 py-0.5">개 30 kg 초과</td><td>50%</td><td>25%</td><td>25%</td></tr>
+        </tbody>
+      </table>
+      · <b>소형일수록 지질 비율이 높은 이유</b>: 작은 환자는 유지 수액량이 적어서, 같은 열량을 포도당·아미노산으로 채우면 삼투압이 올라갑니다. 지질은 열량 밀도가 높고 삼투압이 낮아 말초정맥 투여에 유리합니다.<br>
+      · <b>대형견에서 탄수화물이 높은 이유</b>: 수액량이 충분해 삼투압 여유가 있고, 지질 총량을 줄일 수 있습니다.<br>
+      · 고양이는 5 kg을 넘어도 6–10 kg 구간을, 3 kg 미만은 3–5 kg 구간을 적용합니다 (3 kg 미만은 총량이 유지수액을 넘기 쉬움).<br>
+      · 고혈당이면 탄수화물↓·지질↑, 고지혈증·지질혈증이면 지질↓, 간성뇌증·신부전이면 단백질↓로 직접 조정하세요. 칸을 고치면 '직접 입력'으로 바뀌고, '기본값으로 되돌리기'를 누르면 표 값으로 돌아갑니다.
+    </div>
+
+    <!-- 3. 수액 -->
+    <div class="sec">3. 베이스 수액·총량</div>
+    <div class="row">
+      <div><span class="lbl">베이스 수액</span>
+        <select id="ppn_base" class="inp" onchange="PPN.calc()">
+          <option value="308">0.9% N/S (308 mOsm/L)</option>
+          <option value="273">하트만 (273 mOsm/L)</option>
+          <option value="294">플라즈마솔루션A (294 mOsm/L)</option>
+          <option value="154">하프샐라인 (154 mOsm/L)</option>
+          <option value="252" data-dex="50">5% DW (252 mOsm/L, 포도당 포함)</option>
+        </select></div>
+    </div>
+    <div class="row">
+      <div><span class="lbl">유지 수액 (ml/일)</span><input id="ppn_maint" class="inp" readonly></div>
+      <div><span class="lbl">수액 배수</span><input id="ppn_fmult" type="number" step="0.1" value="1" class="inp" oninput="PPN.calc()"></div>
+      <div><span class="lbl">총 PPN량 (ml/일)</span><input id="ppn_total" class="inp font-bold" readonly></div>
+    </div>
+
+    <!-- 4. 성분 -->
+    <div class="sec">4. 혼합 성분 (하루 기준 ml)</div>
+    <div class="mini mb-1.5">빈칸이면 <b class="text-violet-700">권장량</b>으로 계산합니다. 직접 넣으면 그 값으로 계산합니다.</div>
+
+    <div class="comp" style="border-color:#fbcfe8">
+      <div class="comp-h"><span class="comp-n text-pink-700">50% 포도당</span><span class="rec" id="ppn_recD"></span></div>
+      <div class="row !mb-0">
+        <div><span class="lbl">혼합량 (ml/일)</span><input id="ppn_vD" type="number" step="0.1" class="inp" oninput="PPN.calc()"></div>
+        <div><span class="lbl">kcal</span><input id="ppn_kD" class="inp" readonly></div>
+      </div>
+      <div class="mini mt-1">1.7 kcal/ml · 2,525 mOsm/L</div>
+    </div>
+
+    <div class="comp" style="border-color:#bfdbfe">
+      <div class="comp-h"><span class="comp-n text-blue-700">아미노산 제제</span><span class="rec" id="ppn_recA"></span></div>
+      <div class="row">
+        <div><span class="lbl">제품</span>
+          <select id="ppn_aaProd" class="inp" onchange="PPN.setAA()">
+            <option value="hepavia">헤파비아주 (8.0%) — 간질환·간성뇌증용, BCAA 강화</option>
+            <option value="saeronamin">새로나민주 (8.0%) — 간부전·간성혼수용, BCAA·아르기닌 강화</option>
+            <option value="nephrisol">네프리솔주 (5.4%) — 신부전용, 필수아미노산만</option>
+            <option value="aa85">일반 종합 아미노산 8.5%</option>
+            <option value="aa10">일반 종합 아미노산 10%</option>
+            <option value="custom">직접 입력</option>
+          </select></div>
+      </div>
+      <div class="row">
+        <div><span class="lbl">농도 (%)</span><input id="ppn_aaPct" type="number" step="0.1" value="8.0" class="inp" oninput="PPN.aaCustom();PPN.calc()"></div>
+        <div><span class="lbl">삼투압 (mOsm/L)</span><input id="ppn_aaOsm" type="number" step="10" value="740" class="inp" oninput="PPN.aaCustom();PPN.calc()"></div>
+      </div>
+      <div class="row !mb-0">
+        <div><span class="lbl">혼합량 (ml/일)</span><input id="ppn_vA" type="number" step="0.1" class="inp" oninput="PPN.calc()"></div>
+        <div><span class="lbl">kcal / 단백 g</span><input id="ppn_kA" class="inp" readonly></div>
+      </div>
+      <div id="ppn_aaNote" class="mini mt-1.5"></div>
+    </div>
+
+    <div class="comp" style="border-color:#fde68a">
+      <div class="comp-h"><span class="comp-n text-amber-700">20% 지질 (리피드)</span><span class="rec" id="ppn_recL"></span></div>
+      <div class="row">
+        <div><span class="lbl">삼투압 (mOsm/L)</span><input id="ppn_lpOsm" type="number" step="10" value="260" class="inp" oninput="PPN.calc()"></div>
+        <div><span class="lbl">kcal/ml</span><input id="ppn_lpK" type="number" step="0.1" value="2.0" class="inp" oninput="PPN.calc()"></div>
+      </div>
+      <div class="row !mb-0">
+        <div><span class="lbl">혼합량 (ml/일)</span><input id="ppn_vL" type="number" step="0.1" class="inp" oninput="PPN.calc()"></div>
+        <div><span class="lbl">kcal / 지질 g</span><input id="ppn_kL" class="inp" readonly></div>
+      </div>
+      <div class="mini mt-1">제품마다 다름 — 인트라리피드 20% 약 260, SMOF리피드 20% 약 380 mOsm/L</div>
+    </div>
+
+    <!-- 5. 결과 -->
+    <div class="sec">5. 조제 지시</div>
+    <div class="row">
+      <div><span class="lbl">한 번에 조제할 양</span>
+        <select id="ppn_hrs" class="inp" onchange="PPN.calc()">
+          <option value="24">24시간분 (1일 1회 교체)</option>
+          <option value="12">12시간분</option>
+        </select></div>
+    </div>
+    <div id="ppn_mix" class="rounded-lg border border-violet-200 bg-violet-50 p-2.5 mb-2"></div>
+    <div id="ppn_alerts"></div>
+
+    <div class="box">
+      <div class="font-bold text-[13px] mb-1">영양 요약 (하루)</div>
+      <div id="ppn_summary"></div>
+    </div>
+
+    <div class="text-[11.5px] text-gray-600 bg-gray-100 rounded-lg p-2.5 leading-relaxed">
+      <b>조제·투여</b><br>
+      · 무균 조제. 아미노산 → 포도당 → 베이스 수액 순으로 섞은 뒤 지질을 마지막에 넣고 부드럽게 흔들기<br>
+      · 크림층·기름방울 분리가 보이면 폐기<br>
+      · PPN 전용 카테터·라인 사용, 백·라인은 24시간마다 교체, 1.2 µm 필터<br>
+      · 첫날은 목표의 50%로 시작해 혈당·혈청 확인 후 증량하는 경우가 많음<br>
+      <b>모니터링</b>: 체온, 카테터 부위, 체중, 혈당, 혈청 지질혈증(lipemia) 확인, 전해질(K·P·Mg — 재급식 증후군)<br>
+      <b>계산 근거</b>: RER = 70 × 체중<sup>0.75</sup> · 포도당 50% 1.7 kcal/ml · 아미노산 4 kcal/g · 20% 지질 2.0 kcal/ml · 삼투압 = Σ(성분 ml × mOsm/L) ÷ 총 ml
+    </div>
+        </div>
     </div>
 </div>
 
@@ -1016,6 +1237,7 @@
         if(!w || isNaN(w)) { 
             maintRateEl.value = "0.0";
             targetRateEl.value = "0.0";
+            document.getElementById('drugResultText').classList.add('hidden');
             return; 
         }
         
@@ -1031,6 +1253,7 @@
         else if (drug === 'furosemide') calcFurosemide();
         else if (drug === 'nitroprusside') calcNitroprusside();
         else if (drug === 'norepinephrine') calcNorepinephrine();
+        else if (drug === 'epinephrine') calcEpinephrine();
         else if (drug === 'vasopressin') calcVasopressin();
         else if (drug === 'metoclopramide') calcMetoclopramide();
         else if (drug === 'phenylephrine') calcPhenylephrine();
@@ -1044,7 +1267,8 @@
         else if (drug === 'kcl') calcKcl();
         else if (drug === 'dka') calcDka();
         else if (drug === 'tpa') calctPA();
-        else if (drug === 'mgso4') { document.getElementById('mgso4FluidRate').value = targetRateEl.value; calcMgso4(); }
+        else if (drug === 'mgso4') { if (!mgso4RateManual) document.getElementById('mgso4FluidRate').value = targetRateEl.value; calcMgso4(); }
+        else if (drug === 'insulin') calcInsulin();
         else if (drug === 'lidocaine') calcLidocaine();
         else if (drug === 'esmolol') calcEsmolol();
         else if (drug === 'hydrocortisone') calcHydrocortisone();
@@ -1054,11 +1278,11 @@
         const drug = document.getElementById('fluidDrugSelect').value;
         const container = document.getElementById('dynamicDrugContainer');
         const formIds = [
-            'dobutamineForm', 'furosemideForm', 'nitroprussideForm', 'norepinephrineForm',
+            'dobutamineForm', 'furosemideForm', 'nitroprussideForm', 'norepinephrineForm', 'epinephrineForm',
             'vasopressinForm', 'metoclopramideForm', 'phenylephrineForm', 'diltiazemForm',
             'dopamineForm', 'calciumGluconateForm', 'phosphorusForm', 'cefotaximeForm',
             'famotidineForm', 'nicardipineForm', 'kclForm', 'dkaForm', 'tpaForm', 'mgso4Form',
-            'lidocaineForm', 'esmololForm', 'hydrocortisoneForm'
+            'insulinForm', 'lidocaineForm', 'esmololForm', 'hydrocortisoneForm'
         ];
         const resText = document.getElementById('drugResultText');
         
@@ -1084,6 +1308,7 @@
         else if (drug === 'furosemide') calcFurosemide();
         else if (drug === 'nitroprusside') calcNitroprusside();
         else if (drug === 'norepinephrine') calcNorepinephrine();
+        else if (drug === 'epinephrine') calcEpinephrine();
         else if (drug === 'vasopressin') calcVasopressin();
         else if (drug === 'metoclopramide') calcMetoclopramide();
         else if (drug === 'phenylephrine') calcPhenylephrine();
@@ -1097,63 +1322,13 @@
         else if (drug === 'kcl') calcKcl();
         else if (drug === 'dka') calcDka();
         else if (drug === 'tpa') calctPA();
-        else if (drug === 'mgso4') { document.getElementById('mgso4FluidRate').value = document.getElementById('fluidTargetRate').value; calcMgso4(); }
+        else if (drug === 'mgso4') { if (!mgso4RateManual) document.getElementById('mgso4FluidRate').value = document.getElementById('fluidTargetRate').value; calcMgso4(); }
+        else if (drug === 'insulin') calcInsulin();
         else if (drug === 'lidocaine') calcLidocaine();
         else if (drug === 'esmolol') calcEsmolol();
         else if (drug === 'hydrocortisone') calcHydrocortisone();
     }
     
-    function handleFluidDrugSelect() {
-        const drug = document.getElementById('fluidDrugSelect').value;
-        const container = document.getElementById('dynamicDrugContainer');
-        const formIds = [
-            'dobutamineForm', 'furosemideForm', 'nitroprussideForm', 'norepinephrineForm',
-            'vasopressinForm', 'metoclopramideForm', 'phenylephrineForm', 'diltiazemForm',
-            'dopamineForm', 'calciumGluconateForm', 'phosphorusForm', 'cefotaximeForm',
-            'famotidineForm', 'nicardipineForm', 'kclForm', 'dkaForm', 'tpaForm', 'mgso4Form',
-            'lidocaineForm', 'esmololForm'
-        ];
-        const resText = document.getElementById('drugResultText');
-        
-        container.classList.add('hidden');
-        resText.classList.add('hidden');
-        formIds.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.classList.add('hidden');
-        });
-        
-        if(drug === 'none') return;
-        
-        container.classList.remove('hidden');
-        const activeForm = document.getElementById(drug.replace('_cri', '') + 'Form') || 
-                           document.getElementById(drug + 'Form');
-        
-        if (drug === 'calcium_gluconate') document.getElementById('calciumGluconateForm').classList.remove('hidden');
-        else if (drug === 'famotidine_cri') document.getElementById('famotidineForm').classList.remove('hidden');
-        else if (activeForm) activeForm.classList.remove('hidden');
-
-        // 함수 호출
-        if (drug === 'dobutamine') calcDobutamine();
-        else if (drug === 'furosemide') calcFurosemide();
-        else if (drug === 'nitroprusside') calcNitroprusside();
-        else if (drug === 'norepinephrine') calcNorepinephrine();
-        else if (drug === 'vasopressin') calcVasopressin();
-        else if (drug === 'metoclopramide') calcMetoclopramide();
-        else if (drug === 'phenylephrine') calcPhenylephrine();
-        else if (drug === 'diltiazem') calcDiltiazem();
-        else if (drug === 'dopamine') calcDopamine();
-        else if (drug === 'calcium_gluconate') calcCalciumGluconate();
-        else if (drug === 'phosphorus') calcPhosphorus();
-        else if (drug === 'cefotaxime') calcCefotaxime();
-        else if (drug === 'famotidine_cri') calcFamotidineCri();
-        else if (drug === 'nicardipine') calcNicardipine();
-        else if (drug === 'kcl') calcKcl();
-        else if (drug === 'dka') calcDka();
-        else if (drug === 'tpa') calctPA();
-        else if (drug === 'mgso4') { document.getElementById('mgso4FluidRate').value = document.getElementById('fluidTargetRate').value; calcMgso4(); }
-        else if (drug === 'lidocaine') calcLidocaine();
-        else if (drug === 'esmolol') calcEsmolol();
-    }
 
     function calcMgso4() {
         const w = parseFloat(document.getElementById('fluidWeight').value);
@@ -1169,6 +1344,7 @@
         const finalFluidVol = fluidVol - drugVol;
         
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 10% MgSO4 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1230,6 +1406,7 @@
             </div>
             ${warningHtml}
         `;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1270,6 +1447,7 @@
                 ⚠️ 경고 : 혈압모니터링, 단약시 테이퍼링 필요
             </div>
         `;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1299,6 +1477,7 @@
                 </div>
             </div>
         `;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1312,6 +1491,7 @@
         const drugVol = (dose * w * 60 * fluidVol) / (1000 * 50 * fluidRate);
         const finalFluidVol = fluidVol - drugVol;
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 도부타민 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1325,6 +1505,7 @@
         const drugVol = (dose * w * (fluidVol / fluidRate)) / 10;
         const finalFluidVol = fluidVol - drugVol;
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 푸로세마이드 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1338,6 +1519,35 @@
         const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 25000);
         const finalFluidVol = fluidVol - drugVol;
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 니트로프루시드 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
+        resText.classList.remove('hidden');
+    }
+
+    const RES_EPI = 'drugResultText';
+    function calcEpinephrine() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const dose = parseFloat(document.getElementById('epiDose').value);
+        const fluidVol = parseFloat(document.getElementById('epiFluidVol').value);
+        const fluidRate = parseFloat(document.getElementById('epiFluidRate').value);
+        const resText = document.getElementById(RES_EPI);
+        if (!w || !dose || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
+        const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 1000);   // 1 mg/ml = 1000 μg/ml
+        const finalFluidVol = fluidVol - drugVol;
+        const concUg = drugVol * 1000 / fluidVol;                      // μg/ml
+        const mlPer01 = (0.1 * w * 60) / concUg;                         // 0.1 μg/kg/min 당 ml/hr
+        let rangeMsg = '';
+        if (dose > 1) rangeMsg = `<div class="mt-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ ${dose} μg/kg/min: 일반 상한(1) 초과 — 용량 재확인, 바소프레신 등 병용 고려</div>`;
+        else if (dose < 0.05) rangeMsg = `<div class="mt-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 p-2 rounded-lg font-bold">⚠️ 0.05 μg/kg/min 미만: 일반 권장 하한 미만</div>`;
+        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 에피네프린 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+        <div class="text-xs text-indigo-700 mt-1 font-normal">[계산식] ${dose} μg/kg/min × ${w} kg × 60 × ${fluidVol} ml ÷ (${fluidRate} ml/hr × 1000 μg/ml) · 최종 농도 ${(drugVol * 1000 / fluidVol).toFixed(2)} μg/ml · 0.1 μg/kg/min 증감 = ${mlPer01.toFixed(2)} ml/hr</div>
+        ${rangeMsg}
+        <div class="mt-2 text-xs text-left font-bold text-red-700 bg-red-50 border border-red-200 p-2 rounded-lg leading-snug">
+            ⚠️ ECG·혈압 연속 모니터 (빈맥·심실성 부정맥)<br>
+            ⚠️ 젖산·혈당 상승(β2 효과) — 젖산만으로 관류 판단 금지, CRT·소변량 병행<br>
+            ⚠️ 가능하면 중심정맥/전용 라인, 혈관외 누출 시 조직괴사 · 차광<br>
+            ⚠️ 혈관확장성 쇼크 1차는 노르에피네프린 — 에피네프린은 아나필락시스 1순위 / 불응성 쇼크 2차 약물
+        </div>`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1351,6 +1561,7 @@
         const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 1000);
         const finalFluidVol = fluidVol - drugVol;
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 노르에피네프린 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1364,6 +1575,7 @@
         const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 20000);
         const finalFluidVol = fluidVol - drugVol;
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 바소프레신 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1377,6 +1589,7 @@
         const drugVol = (dose * w * fluidVol) / (fluidRate * 24 * 5);
         const finalFluidVol = fluidVol - drugVol;
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 메토클로프로마이드 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1390,6 +1603,7 @@
         const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 10000);
         const finalFluidVol = fluidVol - drugVol;
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 페닐에프린 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1432,6 +1646,7 @@
                 ⚠️ 경고 : 혈압모니터링
             </div>
         `;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1445,6 +1660,7 @@
         const drugVol = (dose * w * 60 * fluidVol) / (fluidRate * 40000);
         const finalFluidVol = fluidVol - drugVol;
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 도파민 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
     
@@ -1465,6 +1681,7 @@
         <div class="mt-3 text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 p-3 rounded-lg font-bold">
             💡 투여 중인 Elemental Calcium: <span class="text-lg">${elementalCalcium.toFixed(2)}</span> mg/kg/hr
         </div>`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1494,6 +1711,7 @@
         
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 포스텐 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
         ${maxRateHtml}`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
     
@@ -1516,6 +1734,7 @@
             🚀 <span class="text-lg">${loadingVol.toFixed(2)}</span> ml 로딩 후 속도 ${fluidRate}ml/hr로 CRI 시작
             <div class="text-xs text-gray-500 font-normal mt-1">(로딩 용량: 20 mg/kg 기준)</div>
         </div>`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1538,6 +1757,7 @@
             🚀 <span class="text-lg">${loadingVol.toFixed(2)}</span> ml 로딩 후 속도 ${fluidRate}ml/hr로 CRI 시작
             <div class="text-xs text-gray-500 font-normal mt-1">(로딩 용량: 1 mg/kg 기준)</div>
         </div>`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1554,6 +1774,76 @@
         const finalFluidVol = fluidVol - drugVol;
         
         resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 니카르디핀 <span class="text-pink-600 text-xl font-extrabold mx-1">${drugVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
+        resText.classList.remove('hidden');
+    }
+
+    let mgso4RateManual = false;
+    const RES_INSULIN = 'drugResultText';
+    function calcInsulin() {
+        const w = parseFloat(document.getElementById('fluidWeight').value);
+        const resText = document.getElementById(RES_INSULIN);
+        const sp = currentFluidSpecies;
+        const defDose = sp === 'dog' ? 2.2 : 1.1;
+        const doseIn = document.getElementById('insuDose');
+        doseIn.placeholder = `기본 ${defDose} (${sp === 'dog' ? '개' : '고양이'})`;
+        const dose = parseFloat(doseIn.value) || defDose;
+        const bag = parseFloat(document.getElementById('insuBagVol').value) || 250;
+        const bg = parseFloat(document.getElementById('insuBG').value);
+        if (!w) { resText.classList.add('hidden'); return; }
+        const units = dose * w;
+        const insMl = units / 100;               // 휴물린알 100 IU/ml
+        const finalFluidVol = bag - insMl;
+        const conc = units / bag;                 // IU/ml
+        const sc = bag / 250;                     // 250 ml 기준 프로토콜 속도 환산
+        const rows = [
+            { lo: 250, hi: Infinity, lab: '> 250', r: 10, fl: '0.9% NaCl (덱스트로스 없음)' },
+            { lo: 200, hi: 250, lab: '200–250', r: 7, fl: '0.45% NaCl + 2.5% 덱스트로스' },
+            { lo: 150, hi: 200, lab: '150–200', r: 5, fl: '0.45% NaCl + 2.5% 덱스트로스' },
+            { lo: 100, hi: 150, lab: '100–150', r: 5, fl: '0.45% NaCl + 5% 덱스트로스' },
+            { lo: -Infinity, hi: 100, lab: '< 100', r: 0, fl: '0.45% NaCl + 5% 덱스트로스 (인슐린 중단)' },
+        ];
+        const hit = isNaN(bg) ? -1 : rows.findIndex(x => bg > x.lo && bg <= x.hi || (x.hi === Infinity && bg > x.lo));
+        const tr = rows.map((x, i) => {
+            const ml = x.r * sc;
+            const ukh = ml * conc / w;
+            const on = i === hit;
+            return `<tr class="${on ? 'bg-yellow-200 font-extrabold' : ''}">
+                <td class="border px-1 py-1">${x.lab}</td>
+                <td class="border px-1 py-1">${x.r ? ml.toFixed(1) : '중단'}</td>
+                <td class="border px-1 py-1">${x.r ? ukh.toFixed(3) : '0'}</td>
+                <td class="border px-1 py-1 text-left">${x.fl}</td></tr>`;
+        }).join('');
+        let now = '';
+        if (hit >= 0) {
+            const x = rows[hit];
+            now = x.r
+                ? `<div class="mt-2 text-base">현재 BG ${bg} → 인슐린 라인 <span class="text-pink-600 text-xl font-extrabold">${(x.r * sc).toFixed(1)} ml/hr</span> (${(x.r * sc * conc / w).toFixed(3)} IU/kg/hr)<br><span class="text-sm">메인 수액: ${x.fl}</span></div>`
+                : `<div class="mt-2 text-base text-red-700">현재 BG ${bg} (<100) → <b>인슐린 CRI 중단</b>, 메인 수액 0.45% NaCl + 5% 덱스트로스</div>`;
+        }
+        if (!isNaN(bg) && bg < 60) now += `<div class="mt-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 저혈당 (BG ${bg}) — 인슐린 중단, 덱스트로스 볼루스 고려</div>`;
+        const smallBag = bag < 100 ? `<div class="mt-1">⚠️ 수액량 ${bag} ml: 라인 프라이밍 폐기분(50 ml) 대비 너무 적습니다. 250 ml 권장</div>` : '';
+        resText.innerHTML = `N/S ${finalFluidVol.toFixed(1)}ml에 휴물린알 <span class="text-pink-600 text-xl font-extrabold mx-1">${insMl.toFixed(2)}ml</span> (${units.toFixed(1)} IU) 믹스 → 총 ${bag} ml
+        <div class="text-sm text-indigo-800 mt-1">💉 U-100 인슐린 시린지로 <b>${units.toFixed(1)} unit</b> 눈금만큼 채취${insMl < 0.1 ? ' (일반 1 ml 시린지 사용 금지 — 0.1 ml 미만)' : ''}</div>
+        <div class="text-xs text-indigo-700 mt-1 font-normal">[계산식] ${dose} IU/kg × ${w} kg = ${units.toFixed(1)} IU ÷ 100 IU/ml = ${insMl.toFixed(2)} ml · 최종 농도 ${conc.toFixed(3)} IU/ml</div>
+        ${now}
+        <table class="w-full mt-2 text-xs font-normal border-collapse bg-white">
+            <tr class="bg-indigo-100 font-bold"><td class="border px-1">BG (mg/dL)</td><td class="border px-1">인슐린 ml/hr</td><td class="border px-1">IU/kg/hr</td><td class="border px-1">메인 수액</td></tr>
+            ${tr}
+        </table>
+        <div class="text-xs text-left font-normal text-gray-700 mt-2 leading-snug">
+            · 속도표: Macintire 프로토콜 (250 ml 기준 10/7/5/5 ml/hr${sc !== 1 ? `, ${bag} ml로 ×${sc.toFixed(2)} 환산` : ''})<br>
+            · 덱스트로스 만들기: 1 L에 50% 포도당 50 ml → 2.5%, 100 ml → 5% (500 ml 백은 절반)
+        </div>
+        <div class="mt-2 text-xs text-left font-bold text-red-700 bg-red-50 border border-red-200 p-2 rounded-lg leading-snug">
+            ⚠️ 첫 50 ml를 라인에 흘려 버린 후 사용 (인슐린 튜브 흡착)<br>
+            ⚠️ 메인 수액과 별도 라인/시린지로, 수액속도 변경과 독립적으로 조절<br>
+            ⚠️ BG 1–2시간마다 측정, 시간당 50–100 mg/dL 이하로만 감소<br>
+            ⚠️ K⁺ <3.5 mEq/L면 칼륨 먼저/동시 보충 후 시작 (인슐린이 K⁺·P를 세포 내로 이동)<br>
+            ⚠️ 중증 탈수·쇼크: 수액 1–2시간(일부 최대 4–6시간) 먼저, 이후 인슐린 시작
+            ${smallBag}
+        </div>`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1568,11 +1858,13 @@
         if (!w || isNaN(k) || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
         
         let targetReq = 0;
-        if (k >= 3.6 && k <= 5.0) targetReq = 20;
-        else if (k >= 3.1 && k <= 3.5) targetReq = 30;
-        else if (k >= 2.6 && k <= 3.0) targetReq = 40;
-        else if (k >= 2.1 && k <= 2.5) targetReq = 60;
-        else if (k >= 0 && k <= 2.0) targetReq = 80;
+        if (k > 5.0) targetReq = 0;
+        else if (k > 3.5) targetReq = 20;
+        else if (k > 3.0) targetReq = 30;
+        else if (k > 2.5) targetReq = 40;
+        else if (k > 2.0) targetReq = 60;
+        else targetReq = 80;
+        const kWarn = k > 5.0 ? `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ K⁺ ${k} mEq/L (>5.0): 고칼륨혈증 — 칼륨 보충 금지. 칼륨 없는 수액(N/S) 사용, 원인 평가</div>` : '';
         
         const step1 = targetReq / multi;
         const step2 = step1 * (fluidVol / 1000);
@@ -1600,11 +1892,12 @@
             </div>`;
         }
         
-        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 KCl <span class="text-pink-600 text-xl font-extrabold mx-1">${kclVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+        resText.innerHTML = kWarn + `수액 ${finalFluidVol.toFixed(2)}ml에 KCl <span class="text-pink-600 text-xl font-extrabold mx-1">${kclVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
         <div class="text-xs text-indigo-700 mt-2 font-normal">
             [계산식] 필요 K+: ${targetReq}mEq/L ÷ 배수(${multi}) = ${step1.toFixed(2)}mEq/L <br> 총 필요량: ${step2.toFixed(2)}mEq - 수액 자체 K+ ${baseK_total.toFixed(2)}mEq = ${step3 > 0 ? step3.toFixed(2) : 0}mEq
         </div>
         ${maxRateHtml}`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -1619,11 +1912,13 @@
         if (!w || isNaN(k) || !fluidVol || !fluidRate) { resText.classList.add('hidden'); return; }
         
         let targetReq = 0;
-        if (k >= 3.6 && k <= 5.0) targetReq = 30;
-        else if (k >= 3.1 && k <= 3.5) targetReq = 45;
-        else if (k >= 2.6 && k <= 3.0) targetReq = 60;
-        else if (k >= 2.1 && k <= 2.5) targetReq = 90;
-        else if (k >= 0 && k <= 2.0) targetReq = 120;
+        if (k > 5.0) targetReq = 0;
+        else if (k > 3.5) targetReq = 30;
+        else if (k > 3.0) targetReq = 45;
+        else if (k > 2.5) targetReq = 60;
+        else if (k > 2.0) targetReq = 90;
+        else targetReq = 120;
+        const kWarn = k > 5.0 ? `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ K⁺ ${k} mEq/L (>5.0): 고칼륨혈증 — 칼륨 보충 금지. 칼륨 없는 수액(N/S) 사용, 원인 평가</div>` : '';
         
         const step1 = targetReq / multi;
         const step2 = step1 * (fluidVol / 1000);
@@ -1659,7 +1954,7 @@
         
         const phosMmolPerHour = ((phosVol * 1) / fluidVol) * fluidRate / w;
 
-        resText.innerHTML = `수액 ${finalFluidVol.toFixed(2)}ml에 KCl <span class="text-pink-600 text-xl font-extrabold mx-1">${kclVol.toFixed(2)}ml</span> 와 포스텐 <span class="text-blue-600 text-xl font-extrabold mx-1">${phosVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
+        resText.innerHTML = kWarn + `수액 ${finalFluidVol.toFixed(2)}ml에 KCl <span class="text-pink-600 text-xl font-extrabold mx-1">${kclVol.toFixed(2)}ml</span> 와 포스텐 <span class="text-blue-600 text-xl font-extrabold mx-1">${phosVol.toFixed(2)}ml</span> 믹스, 속도 ${fluidRate}ml/hr
         <div class="text-xs text-indigo-700 mt-2 font-normal">
             [DKA 1.5배 보정] 필요 K+: ${targetReq}mEq/L ÷ 배수(${multi}) = ${step1.toFixed(2)}mEq/L <br> 총 필요량: ${step2.toFixed(2)}mEq - 수액 자체 K+ ${baseK_total.toFixed(2)}mEq = ${step3 > 0 ? step3.toFixed(2) : 0}mEq
         </div>
@@ -1667,6 +1962,7 @@
             🔹 현재 인(Phosphate) 교정 속도: ${phosMmolPerHour.toFixed(3)} mmol/kg/hr
         </div>
         ${maxRateHtml}`;
+        if (finalFluidVol < 0) resText.innerHTML = `<div class="mb-2 text-sm text-white bg-red-600 p-2 rounded-lg font-bold">⛔ 약물량(ml)이 총 수액량보다 많아 조제 불가 — 총 수액량 또는 투여 속도를 늘리세요</div>` + resText.innerHTML;
         resText.classList.remove('hidden');
     }
 
@@ -2533,6 +2829,135 @@
             resBox.classList.remove('hidden');
         }
     }
+</script>
+<script>
+// ===== PPN (부분 정맥영양) 계산기 =====
+const PPN = (() => {
+let sp='dog', userSplit=false;
+const $=id=>document.getElementById('ppn_'+id);
+const num=id=>{const v=parseFloat($(id).value);return isFinite(v)?v:null};
+const f1=x=>(Math.round(x*10)/10).toFixed(1);
+
+const AA={
+  hepavia:{pct:8.0,osm:740,note:'<b>헤파비아주</b>(대한약품공업): 분지쇄 아미노산(BCAA) 강화·방향족 아미노산 감소 간장애용 제제. 성분표 기준 아미노산 약 80 g/L, 삼투압 약 740 mOsm/L(성분으로 계산한 추정값 — 라벨 확인 권장). 메티오닌·페닐알라닌이 적어 간질환이 없는 환자의 장기 단독 사용에는 일반 종합 아미노산이 더 적합합니다. 중증 신장애·고질소혈증에는 투여 금기.'},
+  saeronamin:{pct:8.0,osm:700,note:'<b>새로나민주</b>(대한약품공업): 중증 간부전·간성혼수용 제제 (아미노스테릴 N-헤파 8%와 같은 계열). 아미노산 약 80 g/L, 삼투압 약 700 mOsm/L(성분으로 계산한 추정값 — 라벨 확인 권장). 헤파비아주보다 아르기닌이 많고(10.7 vs 6 g/L) 메티오닌·페닐알라닌은 적음(1.1·0.88 g/L) — 간질환이 없는 환자의 장기 단독 사용에는 일반 종합 아미노산이 더 적합.'},
+  nephrisol:{pct:5.36,osm:430,note:'<b>네프리솔주</b>(대한약품공업): 신부전용 제제. 필수아미노산 8종 + 히스티딘만 들어 있음 (250 ml에 필수아미노산 13.4 g → 5.36%). 삼투압 약 430 mOsm/L(성분으로 계산한 추정값 — 라벨 확인 권장). 🚩 <b>아르기닌이 없음</b> — 고양이는 아르기닌 없이 아미노산을 받으면 수 시간 내 고암모니아혈증이 올 수 있어 단독 질소원으로 쓰면 안 됩니다. 간성혼수·고암모니아혈증 환자 금기.'},
+  aa85:{pct:8.5,osm:880,note:'일반 8.5% 아미노산: 0.34 kcal/ml, 약 880 mOsm/L (수의 문헌 표준).'},
+  aa10:{pct:10,osm:1000,note:'일반 10% 아미노산: 0.4 kcal/ml, 약 1,000 mOsm/L — 제품 라벨 확인.'},
+  custom:{note:'제품 라벨의 농도(%)와 삼투압(mOsm/L)을 넣으세요.'}
+};
+function setAA(){const k=$('aaProd').value,a=AA[k];if(a.pct!==undefined){$('aaPct').value=a.pct;$('aaOsm').value=a.osm;}$('aaNote').innerHTML=a.note;calc();}
+function aaCustom(){const k=$('aaProd').value,a=AA[k];if(k!=='custom'&&(num('aaPct')!==a.pct||num('aaOsm')!==a.osm)){$('aaProd').value='custom';$('aaNote').innerHTML=AA.custom.note;}}
+function toggleSplitInfo(){$('splitInfo').classList.toggle('hidden');}
+function bandOf(w){if(w<=5)return 0;if(w<=10||sp==='cat')return 1;if(w<=30)return 2;return 3;}
+function setSp(s){sp=s;document.querySelectorAll('#ppn .tg[data-sp]').forEach(b=>b.classList.toggle('on',b.dataset.sp===s));calc();}
+
+function defaultSplit(w){
+  // Freeman PPN worksheet: 3–5 kg 20/20/60 · 6–10 kg 25/25/50 · 개 11–30 kg 33/33/33 · 개 >30 kg 50/25/25
+  if(w<=5) return [20,20,60];
+  if(w<=10||sp==='cat') return [25,25,50];
+  if(w<=30) return [33,33,34];
+  return [50,25,25];
+}
+
+function calc(){
+  const w=num('wt');
+  const mixBox=$('mix'), al=$('alerts'), sum=$('summary');
+  if(!w||w<=0){
+    ['rer','per','maint','total','kD','kA','kL'].forEach(id=>$(id).value='');
+    ['recD','recA','recL'].forEach(id=>$(id).textContent='');
+    mixBox.innerHTML='<div class="mini text-center">체중을 입력하세요</div>'; al.innerHTML=''; sum.innerHTML=''; return;
+  }
+  const rer=70*Math.pow(w,0.75);
+  const mult=num('mult')||0;
+  const per=rer*mult;
+  $('rer').value=f1(rer); $('per').value=f1(per);
+
+  document.querySelectorAll('#ppn_splitTable tr[data-band]').forEach(r=>{const on=+r.dataset.band===bandOf(w);r.style.background=on?'#ddd6fe':'';r.style.fontWeight=on?'700':'';});
+  if(!userSplit){const d=defaultSplit(w);$('pC').value=d[0];$('pP').value=d[1];$('pL').value=d[2];}
+  const pC=num('pC')||0,pP=num('pP')||0,pL=num('pL')||0, pSum=pC+pP+pL;
+  const bn=['3–5 kg','6–10 kg','11–30 kg','30 kg 초과'][bandOf(w)];
+  $('splitNote').textContent=`합계 ${pSum}%`+(userSplit?' (직접 입력)':` (기본값: ${sp==='cat'?'고양이':'개'} ${bn} 구간)`);
+  $('splitNote').style.color=Math.abs(pSum-100)>1?'#b3261e':'#6b7280';
+
+  const maint=(sp==='dog'?132:80)*Math.pow(w,0.75);
+  const total=maint*(num('fmult')||1);
+  $('maint').value=f1(maint); $('total').value=f1(total);
+
+  const aaPct=num('aaPct')||0, aaK=aaPct/100*4, lpK=num('lpK')||2.0;
+  const recA=aaK>0?per*pP/100/aaK:0, recL=per*pL/100/lpK;
+  const vA=num('vA')??recA, vL=num('vL')??recL;
+  // 베이스 수액에 포함된 포도당(5% DW = 50 g/L = 0.17 kcal/ml)을 탄수화물 목표에서 차감
+  // 1.7·D + bk·(총량 − D − A − L) = 탄수화물 목표  →  D = (목표 − bk·(총량 − A − L)) ÷ (1.7 − bk)
+  const dexBase=parseFloat($('base').selectedOptions[0].dataset.dex||0); // g/L
+  const bk=dexBase/1000*3.4;                                               // kcal/ml
+  const choT=per*pC/100;
+  let recD=(choT-bk*(total-vA-vL))/(1.7-bk), baseOver=false;
+  if(recD<0){recD=0;baseOver=true;}
+  $('recD').textContent=`권장 ${f1(recD)} ml`; $('recA').textContent=`권장 ${f1(recA)} ml`; $('recL').textContent=`권장 ${f1(recL)} ml`;
+  $('vD').placeholder=f1(recD); $('vA').placeholder=f1(recA); $('vL').placeholder=f1(recL);
+
+  const vD=num('vD')??recD;
+  const vBase=total-vD-vA-vL;
+  const kBase=Math.max(vBase,0)*bk;
+  const kD=vD*1.7, kA=vA*aaK, kL=vL*lpK, protG=vA*aaPct/100, lipG=vL*0.2;
+  $('kD').value=bk>0?`${f1(kD)} (+베이스 ${f1(kBase)}) kcal`:`${f1(kD)} kcal`; $('kA').value=`${f1(kA)} kcal / ${f1(protG)} g`; $('kL').value=`${f1(kL)} kcal / ${f1(lipG)} g`;
+  const baseOsm=parseFloat($('base').value), aaOsm=num('aaOsm')||0, lpOsm=num('lpOsm')||0;
+  const osm=total>0?(vD*2525+vA*aaOsm+vL*lpOsm+Math.max(vBase,0)*baseOsm)/Math.max(total,vD+vA+vL):0;
+  const kTot=kD+kBase+kA+kL, rate=total/24, hrs=parseFloat($('hrs').value), k=hrs/24;
+  const dexG=vD*0.5+Math.max(vBase,0)*dexBase/1000;                       // 총 포도당 g/일
+  const dexPct=dexG/Math.max(total,vD+vA+vL)*100;
+  const gir=dexG*1000/w/1440; // mg/kg/min
+  const baseName=$('base').selectedOptions[0].text.split(' (')[0];
+
+  // 조제 지시
+  if(vBase<0){
+    mixBox.innerHTML=`<div class="text-[13px] font-bold text-red-700">영양 성분 합계(${f1(vD+vA+vL)} ml)가 총 PPN량(${f1(total)} ml)보다 많습니다. 수액 배수를 올리거나 PPN 배수를 낮추세요.</div>`;
+  } else {
+    mixBox.innerHTML=`
+      <div class="text-[12px] font-bold text-violet-800 mb-1">${hrs}시간분 조제 (1백)</div>
+      <div class="mixline"><span>${baseName}</span><span><span class="big" style="color:#374151">${f1(vBase*k)}</span> ml</span></div>
+      <div class="mixline"><span>+ 50% 포도당</span><span><span class="big">${f1(vD*k)}</span> ml</span></div>
+      <div class="mixline"><span>+ ${({hepavia:'헤파비아주',saeronamin:'새로나민주',nephrisol:'네프리솔주'})[$('aaProd').value]||('아미노산 '+aaPct+'%')}</span><span><span class="big" style="color:#1d4ed8">${f1(vA*k)}</span> ml</span></div>
+      <div class="mixline"><span>+ 20% 지질 (마지막)</span><span><span class="big" style="color:#b45309">${f1(vL*k)}</span> ml</span></div>
+      <div class="mixline" style="border-top:2px solid #c4b5fd;margin-top:2px"><span class="font-bold">총 ${f1(total*k)} ml →</span><span><span class="big" style="color:#6d28d9">${f1(rate)}</span> ml/hr</span></div>`;
+  }
+
+  // 경고
+  const A=[];
+  if(Math.abs(pSum-100)>1) A.push(['crit',`칼로리 배분 합계가 ${pSum}% — 100%로 맞추세요`]);
+  if(vBase<0) A.push(['crit','베이스 수액량이 음수 — 총량 부족']);
+  else if(osm>850) A.push(['crit',`예상 삼투압 ${Math.round(osm)} mOsm/L — 말초정맥 부적합(혈전성 정맥염 위험). 지질 비율을 올리거나 총량을 늘리거나 중심정맥 사용`]);
+  else if(osm>750) A.push(['warn',`예상 삼투압 ${Math.round(osm)} mOsm/L — 750 초과. 카테터 부위 정맥염 감시, 지질 비율 상향 고려`]);
+  else A.push(['ok',`예상 삼투압 ${Math.round(osm)} mOsm/L — 말초정맥 투여 범위(&lt;750)`]);
+  if($('aaProd').value==='nephrisol') A.push(sp==='cat'?['crit','고양이 + 네프리솔주: 아르기닌이 없어 고암모니아혈증 위험 — 단독 아미노산원으로 사용 금지, 아르기닌 포함 제제(헤파비아주·일반 종합 아미노산)와 병용하거나 교체']:['warn','네프리솔주: 아르기닌 없는 필수아미노산 제제 — 단독 사용 시 암모니아·의식 상태 감시, 장기 단독 사용은 피함']);
+  if(bk>0) A.push(['info',`베이스 5% DW의 포도당 ${f1(Math.max(vBase,0)*dexBase/1000)} g (${f1(kBase)} kcal)을 탄수화물 목표에서 빼고 50% 포도당 양을 계산했습니다`]);
+  if(baseOver) A.push(['warn','5% DW만으로 탄수화물 목표를 넘음 — 50% 포도당 불필요. 탄수화물이 과다하니 베이스를 N/S·하트만 등으로 바꾸거나 일부만 5% DW로']);
+  if(sp==='cat'&&mult>0.7) A.push(['warn','고양이: 고혈당 위험 — 혈당 q4–6h 확인']);
+  if(w<3) A.push(['info','3 kg 미만: 영양 목표를 맞추면 수액량이 유지량을 넘기 쉬움 — 수액 과부하 주의']);
+  if(mult>1) A.push(['warn','RER의 100% 초과 — PPN은 보통 RER의 일부만 공급. 과급여·고혈당 주의']);
+  A.push(['info','투여 전후 혈당, 혈청 지질혈증, K·P·Mg 확인 (재급식 증후군)']);
+  al.innerHTML=A.map(([l,m])=>`<div class="al ${l}">${m}</div>`).join('');
+
+  // 요약
+  const row=(a,b)=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`;
+  sum.innerHTML=
+    row('공급 열량', `${f1(kTot)} kcal (RER의 ${Math.round(kTot/rer*100)}%)`)+
+    row('탄수화물 열량', `${f1(kD+kBase)} kcal (목표 ${f1(choT)})`)+
+    row('목표 대비', `${per>0?Math.round(kTot/per*100):0}%`)+
+    row('단백질', `${f1(protG)} g (${(protG/w).toFixed(2)} g/kg)`)+
+    row('지질', `${f1(lipG)} g (${(lipG/w).toFixed(2)} g/kg)`)+
+    row('최종 포도당 농도', `${dexPct.toFixed(1)} %`)+
+    row('포도당 주입 속도', `${gir.toFixed(2)} mg/kg/min`)+
+    row('투여 속도', `${f1(rate)} ml/hr (${(rate/w).toFixed(1)} ml/kg/hr)`);
+}
+$('aaNote').innerHTML=AA.hepavia.note;
+calc();
+
+return { calc, setSp, setAA, aaCustom, toggleSplitInfo,
+  reset: () => { userSplit = false; calc(); },
+  markUser: () => { userSplit = true; calc(); } };
+})();
 </script>
 </body>
 </html>
